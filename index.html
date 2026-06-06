@@ -278,6 +278,73 @@ body {
   .page { padding-bottom:calc(32px + env(safe-area-inset-bottom)); }
 }
 
+.app-header .upgrade-badge {
+  display:inline-block; margin-top:8px; padding:3px 12px; border-radius:12px;
+  background:rgba(255,255,255,0.2); color:#fff; font-size:11px; font-weight:600;
+  cursor:pointer; position:relative; border:1px solid rgba(255,255,255,0.3);
+  transition:all .2s;
+}
+.app-header .upgrade-badge:active { background:rgba(255,255,255,0.35); }
+.app-header .upgrade-badge .crown { margin-right:3px; }
+.app-header .usage-hint {
+  font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px; position:relative;
+}
+
+/* Upgrade Modal */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000;
+  display:none; align-items:center; justify-content:center;
+  backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+}
+.modal-overlay.show { display:flex; }
+.modal-card {
+  background:#fff; border-radius:20px; width:90%; max-width:380px;
+  overflow:hidden; animation:modalIn .3s ease;
+}
+@keyframes modalIn { from { transform:scale(0.9); opacity:0; } to { transform:scale(1); opacity:1; } }
+.modal-header {
+  background:linear-gradient(135deg,#4F6EF7,#7B93FA); padding:28px 24px 22px;
+  text-align:center; position:relative;
+}
+.modal-header h2 { font-size:20px; font-weight:800; color:#fff; }
+.modal-header p { font-size:13px; color:rgba(255,255,255,0.8); margin-top:4px; }
+.modal-body { padding:20px 24px; }
+.plan-card {
+  border:2px solid var(--border); border-radius:14px; padding:16px; margin-bottom:12px;
+  cursor:pointer; transition:all .2s; position:relative;
+}
+.plan-card.selected { border-color:var(--primary); background:var(--primary-light); }
+.plan-card.recommended::after {
+  content:'推荐'; position:absolute; top:-8px; right:12px;
+  background:var(--accent); color:#fff; font-size:10px; font-weight:700;
+  padding:2px 8px; border-radius:6px;
+}
+.plan-name { font-size:15px; font-weight:700; }
+.plan-price { font-size:24px; font-weight:800; color:var(--primary); margin-top:4px; }
+.plan-price .period { font-size:13px; font-weight:500; color:var(--text-secondary); }
+.plan-price .save { font-size:11px; color:var(--success); font-weight:600; margin-left:6px; }
+.plan-features { margin-top:10px; font-size:12px; color:var(--text-secondary); line-height:2; }
+.plan-features .check { color:var(--primary); font-weight:700; margin-right:4px; }
+.modal-actions { padding:0 24px 24px; }
+.btn-upgrade {
+  width:100%; padding:14px; border:none; border-radius:12px;
+  background:linear-gradient(135deg,#4F6EF7,#7B93FA); color:#fff;
+  font-size:16px; font-weight:700; cursor:pointer; transition:all .2s;
+}
+.btn-upgrade:active { filter:brightness(0.92); }
+.modal-close {
+  display:block; text-align:center; margin-top:12px; padding-bottom:20px;
+  font-size:13px; color:var(--text-tertiary); cursor:pointer;
+}
+
+/* Lock badge on premium features */
+.lock-badge {
+  display:inline-flex; align-items:center; gap:3px;
+  font-size:10px; color:var(--accent); font-weight:600;
+  background:#FFF6E9; padding:2px 8px; border-radius:8px; margin-left:6px;
+}
+.lock-badge .lock-icon { font-size:10px; }
+
 /* Desktop: center & widen slightly */
 @media(min-width:520px) {
   .page { padding-left:24px; padding-right:24px; }
@@ -290,6 +357,8 @@ body {
 <div class="app-header">
   <h1>🧮 养老金试算器</h1>
   <p>2024年各省社平 · 三金全覆盖</p>
+  <div class="upgrade-badge" onclick="showUpgradeModal()"><span class="crown">👑</span> 升级专业版</div>
+  <div class="usage-hint" id="usageHint"></div>
 </div>
 
 <div class="page">
@@ -1277,6 +1346,176 @@ async function installApp() {
   const banner = document.getElementById('installBanner');
   if (banner) banner.remove();
 }
+
+// ====== Freemium System ======
+const FREE_DAILY_LIMIT = 2;
+const PREMIUM_KEY = 'pension_premium';
+const USAGE_KEY = 'pension_usage';
+
+function isPremium() {
+  return localStorage.getItem(PREMIUM_KEY) === '1';
+}
+
+function getTodayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getUsageCount() {
+  try {
+    const data = JSON.parse(localStorage.getItem(USAGE_KEY) || '{}');
+    const today = getTodayKey();
+    return data[today] || 0;
+  } catch { return 0; }
+}
+
+function incrementUsage() {
+  try {
+    const data = JSON.parse(localStorage.getItem(USAGE_KEY) || '{}');
+    const today = getTodayKey();
+    data[today] = (data[today] || 0) + 1;
+    // Cleanup old keys (keep only last 7 days)
+    const keys = Object.keys(data).sort();
+    while (keys.length > 7) { delete data[keys.shift()]; }
+    localStorage.setItem(USAGE_KEY, JSON.stringify(data));
+  } catch {}
+  updateUsageHint();
+}
+
+function updateUsageHint() {
+  const hint = document.getElementById('usageHint');
+  if (!hint) return;
+  if (isPremium()) {
+    hint.innerHTML = '👑 专业版 · 无限使用';
+    const badge = document.querySelector('.upgrade-badge');
+    if (badge) badge.style.display = 'none';
+    return;
+  }
+  const used = getUsageCount();
+  const remaining = Math.max(0, FREE_DAILY_LIMIT - used);
+  if (remaining > 0) {
+    hint.innerHTML = `今日剩余 ${remaining} 次免费试算`;
+  } else {
+    hint.innerHTML = '今日免费次数已用完 <span style="color:#FFD700;cursor:pointer;" onclick="showUpgradeModal()">升级解锁→</span>';
+  }
+}
+
+// Premium feature gates
+function isPremiumFeature(feature) {
+  const premiumFeatures = ['csv_upload', 'detail_mode', 'hist_tiers', 'export_template'];
+  return premiumFeatures.includes(feature);
+}
+
+function checkPremium(feature, featureName) {
+  if (isPremium()) return true;
+  showUpgradeModal(featureName);
+  return false;
+}
+
+// Override recalc to check usage limit
+const _origRecalc = recalc;
+recalc = function() {
+  if (!isPremium()) {
+    const used = getUsageCount();
+    if (used >= FREE_DAILY_LIMIT) {
+      showUpgradeModal('继续试算');
+      return;
+    }
+  }
+  _origRecalc();
+  incrementUsage();
+};
+
+// Show upgrade modal
+function showUpgradeModal(featureName) {
+  const overlay = document.getElementById('upgradeModal');
+  if (!overlay) return;
+  overlay.classList.add('show');
+  if (featureName) {
+    const hint = overlay.querySelector('.modal-header p');
+    if (hint) hint.textContent = `升级后即可使用「${featureName}」功能`;
+  }
+}
+
+function closeUpgradeModal() {
+  const overlay = document.getElementById('upgradeModal');
+  if (overlay) overlay.classList.remove('show');
+}
+
+function selectPlan(el) {
+  document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function handleUpgrade() {
+  // Placeholder: in production this would redirect to payment
+  // For now, simulate upgrade success
+  const selected = document.querySelector('.plan-card.selected');
+  const planName = selected ? selected.dataset.plan : 'monthly';
+  localStorage.setItem(PREMIUM_KEY, '1');
+  closeUpgradeModal();
+  updateUsageHint();
+  showToast('🎉 升级成功！已解锁全部功能');
+}
+
+// Gate premium feature clicks
+const origSwitchIndexMode = switchIndexMode;
+switchIndexMode = function(mode) {
+  if (mode === 'detail' && !checkPremium('detail_mode', '逐年明细')) return;
+  origSwitchIndexMode(mode);
+};
+
+const origHandleUpload = handleUpload;
+handleUpload = function(event) {
+  if (!checkPremium('csv_upload', 'CSV批量上传')) { event.target.value = ''; return; }
+  origHandleUpload(event);
+};
+
+const origExportCSV = exportCSV;
+exportCSV = function() {
+  if (!checkPremium('export_template', '导出模板')) return;
+  origExportCSV();
+};
+
+// Init usage hint
+updateUsageHint();
 </script>
+
+<!-- Upgrade Modal -->
+<div class="modal-overlay" id="upgradeModal" onclick="if(event.target===this)closeUpgradeModal()">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>👑 升级专业版</h2>
+      <p>解锁全部功能，规划无忧养老</p>
+    </div>
+    <div class="modal-body">
+      <div class="plan-card recommended selected" data-plan="yearly" onclick="selectPlan(this)">
+        <div class="plan-name">🏅 专业版 · 年付</div>
+        <div class="plan-price">¥68 <span class="period">/年</span> <span class="save">省43%</span></div>
+        <div class="plan-features">
+          <div><span class="check">✓</span> 无限次试算</div>
+          <div><span class="check">✓</span> 逐年/逐月明细</div>
+          <div><span class="check">✓</span> CSV批量上传</div>
+          <div><span class="check">✓</span> 全国32省切换</div>
+          <div><span class="check">✓</span> 分档查询（湖北/广东）</div>
+          <div><span class="check">✓</span> 导出模板</div>
+        </div>
+      </div>
+      <div class="plan-card" data-plan="monthly" onclick="selectPlan(this)">
+        <div class="plan-name">专业版 · 月付</div>
+        <div class="plan-price">¥9.9 <span class="period">/月</span></div>
+        <div class="plan-features">
+          <div><span class="check">✓</span> 同上全部功能</div>
+          <div><span class="check">✓</span> 随时取消</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-upgrade" onclick="handleUpgrade()">立即升级</button>
+      <div class="modal-close" onclick="closeUpgradeModal()">暂不升级，继续使用免费版</div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
