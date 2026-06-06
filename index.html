@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>养老金试算器</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4F6EF7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="养老金试算">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+:root {
+  --primary: #4F6EF7;
+  --primary-dark: #3D5BD6;
+  --primary-light: #EEF1FE;
+  --accent: #FF8C42;
+  --success: #2ECC71;
+  --success-light: #E8F8EF;
+  --warning: #F5A623;
+  --danger: #E74C3C;
+  --text: #1A1D2E;
+  --text-secondary: #6B7294;
+  --text-tertiary: #9CA3C4;
+  --bg: #F4F5FA;
+  --card: #FFFFFF;
+  --border: #E8EAF6;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 2px 12px rgba(79,110,247,0.08);
+  --shadow-lg: 0 8px 32px rgba(79,110,247,0.12);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { font-size:16px; }
+body {
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background:var(--bg); color:var(--text); line-height:1.6; min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Header */
+.app-header {
+  background:linear-gradient(135deg, #4F6EF7 0%, #7B93FA 100%);
+  padding:48px 20px 60px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.app-header::before {
+  content:'';position:absolute;top:-40%;right:-20%;width:200px;height:200px;
+  background:rgba(255,255,255,0.08);border-radius:50%;
+}
+.app-header::after {
+  content:'';position:absolute;bottom:-30%;left:-15%;width:160px;height:160px;
+  background:rgba(255,255,255,0.06);border-radius:50%;
+}
+.app-header h1 { font-size:22px; font-weight:700; color:#fff; letter-spacing:0.5px; position:relative; }
+.app-header p { font-size:13px; color:rgba(255,255,255,0.8); margin-top:6px; position:relative; }
+
+/* Main container */
+.page { max-width:480px; margin:0 auto; padding:0 16px 32px; }
+
+/* Floating result card */
+.result-float {
+  margin-top:-36px; position:relative; z-index:2;
+  background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow-lg);
+  padding:28px 20px 24px; text-align:center;
+}
+.result-amount {
+  font-size:40px; font-weight:800; color:var(--primary);
+  letter-spacing:-1px; line-height:1.1;
+}
+.result-amount .unit { font-size:15px; font-weight:500; color:var(--text-secondary); letter-spacing:0; }
+.result-label { font-size:13px; color:var(--text-tertiary); margin-top:4px; }
+.result-ratio {
+  display:inline-block; margin-top:8px; padding:3px 12px; border-radius:20px;
+  background:var(--primary-light); color:var(--primary); font-size:12px; font-weight:600;
+}
+
+/* Breakdown bars */
+.breakdown { margin-top:20px; text-align:left; }
+.bk-item { margin-bottom:14px; }
+.bk-item:last-child { margin-bottom:0; }
+.bk-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+.bk-name { font-size:13px; color:var(--text-secondary); font-weight:500; }
+.bk-val { font-size:15px; font-weight:700; }
+.bk-bar { height:6px; border-radius:3px; background:#F0F1F7; overflow:hidden; }
+.bk-bar-fill { height:100%; border-radius:3px; transition:width .6s ease; }
+.bk-bar-fill.basic { background:linear-gradient(90deg,#4F6EF7,#7B93FA); }
+.bk-bar-fill.personal { background:linear-gradient(90deg,#2ECC71,#5DDFA4); }
+.bk-bar-fill.trans { background:linear-gradient(90deg,#F5A623,#FFCA6F); }
+
+/* Expandable formula */
+.formula-toggle {
+  margin-top:16px; text-align:center;
+}
+.formula-toggle button {
+  background:none; border:none; color:var(--text-tertiary); font-size:12px; cursor:pointer;
+  display:inline-flex; align-items:center; gap:4px; padding:6px 12px;
+}
+.formula-toggle button .arrow { transition:transform .2s; display:inline-block; font-size:10px; }
+.formula-toggle button.open .arrow { transform:rotate(180deg); }
+.formula-detail {
+  background:#F8F9FE; border-radius:var(--radius-sm); padding:14px 16px;
+  font-size:12px; color:var(--text-secondary); line-height:2;
+  display:none; margin-top:10px; text-align:left;
+}
+.formula-detail.show { display:block; }
+.formula-detail code {
+  background:var(--primary-light); color:var(--primary); padding:1px 6px; border-radius:4px;
+  font-family:'SF Mono',Menlo,monospace; font-size:11px;
+}
+
+/* Section card */
+.section-card {
+  background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:20px 18px; margin-top:14px;
+}
+.section-title {
+  font-size:15px; font-weight:700; color:var(--text); margin-bottom:16px;
+  display:flex; align-items:center; gap:8px;
+}
+.section-title .dot { width:4px; height:16px; border-radius:2px; background:var(--primary); }
+
+/* Form elements */
+.fg { margin-bottom:16px; }
+.fg:last-child { margin-bottom:0; }
+.fg-label {
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:13px; font-weight:600; color:var(--text); margin-bottom:7px;
+}
+.fg-label .sub { font-weight:400; color:var(--text-tertiary); font-size:11px; }
+.fg-label .explain { display:block; font-weight:400; color:var(--text-tertiary); font-size:11px; margin-top:3px; line-height:1.5; }
+
+.fg input[type=number], .fg input[type=text], .fg select {
+  width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm);
+  font-size:15px; background:var(--card); color:var(--text); outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.fg input:focus, .fg select:focus {
+  border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light);
+}
+.fg select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7294' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; }
+
+.fg-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+/* Range slider */
+.range-box { padding:4px 0; }
+.range-row { display:flex; align-items:center; gap:12px; }
+.range-row input[type=range] {
+  flex:1; -webkit-appearance:none; appearance:none; height:6px; border-radius:3px;
+  background:linear-gradient(90deg,var(--primary) 0%,#E8EAF6 0%); outline:none;
+}
+.range-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:24px; height:24px; border-radius:50%;
+  background:#fff; border:3px solid var(--primary); box-shadow:0 2px 6px rgba(79,110,247,0.25);
+  cursor:pointer;
+}
+.range-val-box {
+  min-width:52px; text-align:center; font-size:18px; font-weight:700; color:var(--primary);
+  background:var(--primary-light); border-radius:8px; padding:4px 8px;
+}
+.range-hint { font-size:11px; color:var(--text-tertiary); margin-top:6px; text-align:center; }
+
+/* Tabs */
+.tab-bar {
+  display:flex; background:#F0F1F7; border-radius:var(--radius-sm); padding:3px; margin-bottom:14px;
+}
+.tab-btn {
+  flex:1; padding:9px 8px; text-align:center; font-size:13px; font-weight:600;
+  border:none; border-radius:8px; cursor:pointer; background:transparent;
+  color:var(--text-tertiary); transition:all .25s;
+}
+.tab-btn.active { background:var(--card); color:var(--primary); box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+
+/* Input with button */
+.input-with-btn { display:flex; gap:8px; }
+.input-with-btn input { flex:1; }
+.input-with-btn .btn-sm {
+  padding:12px 14px; border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:600;
+  cursor:pointer; white-space:nowrap; transition:all .2s;
+}
+.btn-estimate { background:var(--primary-light); color:var(--primary); }
+
+/* Detail table */
+.detail-scroll { max-height:320px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius-sm); margin-top:10px; }
+.detail-tbl { width:100%; border-collapse:collapse; font-size:13px; }
+.detail-tbl th {
+  background:#F4F5FA; padding:9px 6px; text-align:center; font-weight:600;
+  color:var(--text-secondary); font-size:11px; white-space:nowrap;
+  position:sticky; top:0; z-index:1; border-bottom:1px solid var(--border);
+}
+.detail-tbl td { padding:6px 4px; text-align:center; border-bottom:1px solid #F4F5FA; }
+.detail-tbl td input {
+  width:100%; padding:7px 6px; border:1.5px solid var(--border); border-radius:6px;
+  font-size:13px; text-align:right; outline:none; background:var(--card);
+}
+.detail-tbl td input:focus { border-color:var(--primary); box-shadow:0 0 0 2px var(--primary-light); }
+.idx-cell { color:var(--primary); font-weight:700; font-size:12px; }
+.del-btn { color:var(--danger); cursor:pointer; font-size:16px; line-height:1; opacity:.7; }
+.del-btn:active { opacity:1; }
+
+.detail-summary {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:12px; padding:12px 14px; background:var(--primary-light); border-radius:var(--radius-sm);
+}
+.detail-summary .lbl { font-size:13px; color:var(--text-secondary); font-weight:500; }
+.detail-summary .val { font-size:20px; font-weight:800; color:var(--primary); }
+
+.action-row { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.act-btn {
+  display:inline-flex; align-items:center; gap:4px; padding:8px 14px; border:none;
+  border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;
+}
+.act-btn:active { filter:brightness(0.92); }
+.act-primary { background:var(--primary-light); color:var(--primary); }
+.act-green { background:var(--success-light); color:var(--success); }
+.act-orange { background:#FFF6E9; color:var(--accent); }
+
+/* Granularity toggle */
+.gran-row { display:flex; align-items:center; gap:10px; margin:10px 0; flex-wrap:wrap; }
+.gran-row .lbl { font-size:12px; color:var(--text-secondary); }
+.gran-pill { display:inline-flex; border:1.5px solid var(--border); border-radius:8px; overflow:hidden; }
+.gran-opt {
+  padding:5px 14px; font-size:12px; font-weight:600; cursor:pointer;
+  background:var(--card); color:var(--text-secondary); border:none;
+}
+.gran-opt.active { background:var(--primary); color:#fff; }
+.gran-row input[type=number] {
+  width:58px; padding:5px 6px; font-size:12px; text-align:center;
+  border:1.5px solid var(--border); border-radius:6px; outline:none;
+}
+.gran-row input[type=number]:focus { border-color:var(--primary); }
+
+/* Upload */
+.upload-box {
+  border:2px dashed var(--border); border-radius:var(--radius-sm); padding:22px 16px;
+  text-align:center; margin-top:10px; cursor:pointer; transition:all .25s; position:relative;
+}
+.upload-box:active { border-color:var(--primary); background:var(--primary-light); }
+.upload-box input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.upload-box .icon { font-size:28px; margin-bottom:4px; }
+.upload-box .main-text { font-size:14px; font-weight:600; color:var(--primary); }
+.upload-box .sub-text { font-size:11px; color:var(--text-tertiary); margin-top:2px; }
+.upload-hint {
+  font-size:11px; color:var(--text-tertiary); margin-top:8px; line-height:1.6; text-align:left;
+  background:#F8F9FE; padding:8px 10px; border-radius:6px;
+}
+
+/* Transition section */
+.trans-tag {
+  display:inline-block; font-size:10px; font-weight:600; padding:2px 8px; border-radius:10px;
+  background:#FFF6E9; color:var(--accent); margin-left:6px; vertical-align:middle;
+}
+
+/* Reset link */
+.reset-link { font-size:12px; color:var(--primary); cursor:pointer; font-weight:500; }
+.reset-link:active { opacity:.7; }
+
+/* Disclaimer */
+.disclaimer {
+  margin-top:14px; padding:14px 16px; background:#FFF9F0; border-radius:var(--radius-sm);
+  font-size:11px; color:#B8860B; line-height:1.7; text-align:center;
+}
+
+/* Toast */
+.toast {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:rgba(26,29,46,0.92); color:#fff; padding:10px 22px; border-radius:24px;
+  font-size:13px; font-weight:500; z-index:999; opacity:0; transition:all .3s;
+  pointer-events:none; backdrop-filter:blur(8px);
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Bottom safe area for iOS */
+@supports (padding-bottom:env(safe-area-inset-bottom)) {
+  .page { padding-bottom:calc(32px + env(safe-area-inset-bottom)); }
+}
+
+/* Desktop: center & widen slightly */
+@media(min-width:520px) {
+  .page { padding-left:24px; padding-right:24px; }
+  .result-amount { font-size:48px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <h1>🧮 养老金试算器</h1>
+  <p>2024年各省社平 · 三金全覆盖</p>
+</div>
+
+<div class="page">
+
+  <!-- Result Card -->
+  <div class="result-float">
+    <div class="result-label">预估月养老金</div>
+    <div class="result-amount"><span id="totalPension">0</span> <span class="unit">元/月</span></div>
+    <div class="result-ratio" id="pensionNote">—</div>
+
+    <div class="breakdown">
+      <div class="bk-item">
+        <div class="bk-head">
+          <span class="bk-name">基础养老金</span>
+          <span class="bk-val" id="basicPension" style="color:var(--primary)">0 元</span>
+        </div>
+        <div class="bk-bar"><div class="bk-bar-fill basic" id="basicBar" style="width:0%"></div></div>
+      </div>
+      <div class="bk-item">
+        <div class="bk-head">
+          <span class="bk-name">个人账户养老金</span>
+          <span class="bk-val" id="personalPension" style="color:var(--success)">0 元</span>
+        </div>
+        <div class="bk-bar"><div class="bk-bar-fill personal" id="personalBar" style="width:0%"></div></div>
+      </div>
+      <div class="bk-item">
+        <div class="bk-head">
+          <span class="bk-name">过渡性养老金</span>
+          <span class="bk-val" id="transPension" style="color:var(--warning)">0 元</span>
+        </div>
+        <div class="bk-bar"><div class="bk-bar-fill trans" id="transBar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="formula-toggle">
+      <button id="formulaBtn" onclick="toggleFormula()"><span class="arrow">▼</span> 查看计算公式</button>
+    </div>
+    <div class="formula-detail" id="formulaDetail">
+      <p>① 基础养老金 = <code>计发基数 × (1+平均缴费指数) ÷ 2 × 缴费年限 × 1%</code></p>
+      <p>② 个人账户养老金 = <code>个人账户储存额 ÷ 计发月数</code></p>
+      <p>③ 过渡性养老金 = <code>计发基数 × 视同缴费指数 × 视同缴费年限 × 过渡系数</code></p>
+      <hr style="border:none;border-top:1px dashed var(--border);margin:8px 0;">
+      <p>计发月数：<strong id="jifayueshu">139</strong>个月（<span id="retireAgeDisplay">60</span>岁退休）</p>
+      <p>过渡系数：<strong id="transCoeffDisplay">1.2</strong>%（<span id="provinceForCoeff">北京</span>）</p>
+      <p>视同缴费年限：<strong id="deemedYearsDisplay">0</strong>年</p>
+      <p>平均缴费指数：<strong id="avgIdxSourceDisplay">1.0</strong>（<span id="avgIdxSourceMode">快速估算</span>）</p>
+    </div>
+  </div>
+
+  <!-- Basic Info -->
+  <div class="section-card">
+    <div class="section-title"><span class="dot"></span>基本信息</div>
+    <div class="fg-row">
+      <div class="fg">
+        <div class="fg-label">社保所在地</div>
+        <select id="province" onchange="onProvinceChange()"></select>
+      </div>
+      <div class="fg">
+        <div class="fg-label">退休年龄 <span class="sub">周岁</span></div>
+        <select id="retireAge" onchange="recalc()"></select>
+      </div>
+    </div>
+    <div class="fg">
+      <div class="fg-label">计发基数 <span class="sub">元/月</span> <span class="reset-link" onclick="resetBase()">↩ 重置</span></div>
+      <input type="number" id="baseSalary" oninput="recalc()">
+    </div>
+  </div>
+
+  <!-- Contribution Info -->
+  <div class="section-card">
+    <div class="section-title"><span class="dot"></span>缴费情况</div>
+
+    <div class="fg">
+      <div class="fg-label">累计缴费月数 <span class="sub">1年=12个月</span></div>
+      <input type="number" id="totalMonths" value="300" min="180" max="600" step="1" oninput="onTotalMonthsChange()">
+      <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;" id="yearsDisplay">= 25年0个月</div>
+    </div>
+
+    <div class="fg">
+      <div class="fg-label">平均缴费指数</div>
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tabSimple" onclick="switchIndexMode('simple')">快速估算</button>
+        <button class="tab-btn" id="tabDetail" onclick="switchIndexMode('detail')">逐年明细</button>
+      </div>
+
+      <!-- Simple mode -->
+      <div id="simpleMode">
+        <div class="fg-label"><span class="explain">你的缴费工资 ÷ 当地社平工资的历年平均值。0.6=最低档，1.0=按社平缴，3.0=封顶档</span></div>
+        <div class="range-box">
+          <div class="range-row">
+            <input type="range" id="avgIndex" min="0.6" max="3.0" step="0.05" value="1.0" oninput="updateIndex(); recalc()">
+            <div class="range-val-box" id="avgIndexVal">1.0</div>
+          </div>
+          <div class="range-hint" id="indexMeaning">按社平工资100%档缴费</div>
+        </div>
+      </div>
+
+      <!-- Detail mode -->
+      <div id="detailMode" style="display:none;">
+        <div class="fg-label"><span class="explain">填写历年缴费基数，系统自动匹配当地社平计算精确指数</span></div>
+
+        <div class="gran-row">
+          <span class="lbl">粒度</span>
+          <div class="gran-pill">
+            <button class="gran-opt active" id="granYear" onclick="switchGran('year')">按年</button>
+            <button class="gran-opt" id="granMonth" onclick="switchGran('month')">按月</button>
+          </div>
+          <span class="lbl">社平增长率</span>
+          <input type="number" id="growthRate" value="8" min="0" max="20" step="0.5" oninput="refillLocalAvg()">
+          <span class="lbl">%</span>
+        </div>
+
+        <div class="upload-box" id="uploadArea">
+          <input type="file" accept=".csv,.txt" onchange="handleUpload(event)">
+          <div class="icon">📂</div>
+          <div class="main-text">点击上传 CSV</div>
+          <div class="sub-text">社保APP导出的缴费记录可直接使用</div>
+          <div class="upload-hint">
+            <strong>格式说明：</strong><br>
+            按年：<code>年份,缴费基数</code>（如 2020,8000）<br>
+            按月：<code>年份,月份,缴费基数</code>（如 2020,1,8000）<br>
+            首行表头自动跳过，社平根据缴纳地自动匹配
+          </div>
+        </div>
+
+        <div class="detail-scroll">
+          <table class="detail-tbl">
+            <thead><tr id="detailHeader">
+              <th style="width:50px;">年份</th><th>缴费基数</th><th>当地社平</th><th style="width:52px;">指数</th><th style="width:28px;"></th>
+            </tr></thead>
+            <tbody id="detailBody"></tbody>
+          </table>
+        </div>
+
+        <div class="action-row">
+          <button class="act-btn act-primary" onclick="addDetailRow()">+ 添加行</button>
+          <button class="act-btn act-green" onclick="exportCSV()">📥 导出模板</button>
+        </div>
+
+        <div class="detail-summary">
+          <span class="lbl">精确平均缴费指数</span>
+          <span class="val" id="detailAvgIdx">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="fg">
+      <div class="fg-label">个人账户累计储存额 <span class="sub">元</span></div>
+      <div class="input-with-btn">
+        <input type="number" id="personalAccount" value="100000" min="0" step="1000" oninput="recalc()">
+        <button class="btn-sm btn-estimate" onclick="estimateAccount()">估算</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transition Pension -->
+  <div class="section-card">
+    <div class="section-title">
+      <span class="dot" style="background:var(--accent);"></span>过渡性养老金 <span class="trans-tag">仅"中人"填写</span>
+    </div>
+    <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:14px;">个人账户建立前参加工作的"中人"才需填写，"新人"可跳过</div>
+    <div class="fg-row">
+      <div class="fg">
+        <div class="fg-label">参加工作年份</div>
+        <input type="number" id="startWorkYear" value="" min="1970" max="2025" placeholder="如1990" oninput="recalc()">
+      </div>
+      <div class="fg">
+        <div class="fg-label">视同缴费指数 <span class="sub">默认1.0</span></div>
+        <input type="number" id="deemedIndex" value="1.0" min="0.6" max="3.0" step="0.05" oninput="recalc()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Historical Salary Query -->
+  <div class="section-card">
+    <div class="section-title"><span class="dot" style="background:var(--success);"></span>历年社平工资查询（2001-2024）</div>
+    <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:14px;">全口径城镇单位就业人员月均工资(2019起) · 非私营在岗职工月均工资(2018前)</div>
+
+    <div class="fg-row" style="margin-bottom:14px;">
+      <div class="fg" style="margin-bottom:0;">
+        <select id="histProvince" onchange="onHistProvChange()">
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="act-btn act-primary" onclick="toggleHistView()" id="histViewBtn" style="font-size:11px;padding:6px 10px;">📊 查看趋势图</button>
+      </div>
+    </div>
+    <div id="histTierRow" style="display:none;margin-bottom:14px;">
+      <div class="fg" style="margin-bottom:0;">
+        <select id="histTier" onchange="renderHistTable()">
+        </select>
+      </div>
+    </div>
+
+    <div class="detail-scroll" style="max-height:400px;">
+      <table class="detail-tbl" id="histTable">
+        <thead>
+          <tr>
+            <th>年份</th><th>月均工资(元)</th><th>年增长率</th><th>数据来源</th>
+          </tr>
+        </thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Mini chart area -->
+    <div id="histChartWrap" style="display:none;margin-top:14px;position:relative;">
+      <canvas id="histChart" width="440" height="280" style="width:100%;height:auto;"></canvas>
+    </div>
+
+    <div style="margin-top:10px;font-size:11px;color:var(--text-tertiary);line-height:1.6;">
+      💡 <strong>官方</strong>= 人社厅/统计局原始数据；<strong>估算</strong>= 按增长率倒推<br>
+      <strong>非私营</strong>= 2001-2018年在岗职工口径；<strong>全口径</strong>= 2019年起含私营单位<br>
+      2018→2019年数据因口径切换会有明显下降，属正常现象<br>
+      湖北/广东可选择不同缴费档次查看分档数据（2019年起）<br>
+      数据来源：国家统计局年鉴、各省人社厅、m12333.cn
+    </div>
+  </div>
+
+  <!-- Disclaimer -->
+  <div class="disclaimer">
+    ⚠️ 本试算器基于公开数据和通用公式估算，实际养老金以社保局核定为准。各省过渡系数、计发基数可能调整，结果仅供参考。
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PROVINCES = [
+  { name:"北京", avgSalary:11937, accountStartYear:1998, transCoeff:1.2 },
+  { name:"天津", avgSalary:8540, accountStartYear:1998, transCoeff:1.2 },
+  { name:"河北", avgSalary:6678, accountStartYear:1996, transCoeff:1.2 },
+  { name:"山西", avgSalary:6997, accountStartYear:1996, transCoeff:1.0 },
+  { name:"内蒙古", avgSalary:8179, accountStartYear:1996, transCoeff:1.0 },
+  { name:"辽宁", avgSalary:7264, accountStartYear:1996, transCoeff:1.0 },
+  { name:"吉林", avgSalary:7322, accountStartYear:1996, transCoeff:1.0 },
+  { name:"黑龙江", avgSalary:7570, accountStartYear:1996, transCoeff:1.0 },
+  { name:"上海", avgSalary:12434, accountStartYear:1997, transCoeff:1.2 },
+  { name:"江苏", avgSalary:8254, accountStartYear:1996, transCoeff:1.2 },
+  { name:"浙江", avgSalary:8433, accountStartYear:1998, transCoeff:1.2 },
+  { name:"安徽", avgSalary:7185, accountStartYear:1996, transCoeff:1.2 },
+  { name:"福建", avgSalary:7535, accountStartYear:1996, transCoeff:1.3 },
+  { name:"江西", avgSalary:6525, accountStartYear:1996, transCoeff:1.3 },
+  { name:"山东", avgSalary:7506, accountStartYear:1996, transCoeff:1.2 },
+  { name:"河南", avgSalary:6385, accountStartYear:1995, transCoeff:1.2 },
+  { name:"湖北", avgSalary:7496, accountStartYear:1996, transCoeff:1.3 },
+  { name:"湖南", avgSalary:6787, accountStartYear:1996, transCoeff:1.3 },
+  { name:"广东(含深圳)", avgSalary:9167, accountStartYear:1994, transCoeff:1.2 },
+  { name:"深圳", avgSalary:11293, accountStartYear:1994, transCoeff:1.2 },
+  { name:"广西", avgSalary:6905, accountStartYear:1996, transCoeff:1.4 },
+  { name:"海南", avgSalary:8188, accountStartYear:1996, transCoeff:1.2 },
+  { name:"重庆", avgSalary:7339, accountStartYear:1996, transCoeff:1.2 },
+  { name:"四川", avgSalary:7646, accountStartYear:1996, transCoeff:1.2 },
+  { name:"贵州", avgSalary:7324, accountStartYear:1996, transCoeff:1.0 },
+  { name:"云南", avgSalary:7263, accountStartYear:1996, transCoeff:1.4 },
+  { name:"西藏", avgSalary:11777, accountStartYear:1997, transCoeff:1.4 },
+  { name:"陕西", avgSalary:7750, accountStartYear:1996, transCoeff:1.0 },
+  { name:"甘肃", avgSalary:7338, accountStartYear:1996, transCoeff:1.0 },
+  { name:"青海", avgSalary:8816, accountStartYear:1996, transCoeff:1.0 },
+  { name:"宁夏", avgSalary:8258, accountStartYear:1996, transCoeff:1.0 },
+  { name:"新疆", avgSalary:8448, accountStartYear:1996, transCoeff:1.4 },
+];
+
+const JIFAYUESHU = {
+  40:233,41:230,42:226,43:223,44:220,45:216,46:212,47:207,48:204,49:199,
+  50:195,51:190,52:185,53:180,54:175,55:170,56:164,57:158,58:152,59:145,
+  60:139,61:132,62:125,63:117,64:109,65:101,66:93,67:84,68:75,69:65,70:56
+};
+
+let indexMode = 'simple';
+let granularity = 'year';
+let detailRows = [];
+
+// Init dropdowns
+const provinceSelect = document.getElementById('province');
+PROVINCES.forEach((p, i) => {
+  const opt = document.createElement('option');
+  opt.value = i; opt.textContent = p.name;
+  provinceSelect.appendChild(opt);
+});
+const ageSelect = document.getElementById('retireAge');
+for (let age = 40; age <= 70; age++) {
+  const opt = document.createElement('option');
+  opt.value = age; opt.textContent = age + '岁';
+  if (age === 60) opt.selected = true;
+  ageSelect.appendChild(opt);
+}
+
+function getProvince() { return PROVINCES[provinceSelect.value]; }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function toggleFormula() {
+  const d = document.getElementById('formulaDetail');
+  const b = document.getElementById('formulaBtn');
+  d.classList.toggle('show');
+  b.classList.toggle('open');
+}
+
+function updateIndex() {
+  const val = parseFloat(document.getElementById('avgIndex').value);
+  document.getElementById('avgIndexVal').textContent = val.toFixed(2);
+  // Update range track gradient
+  const pct = ((val - 0.6) / (3.0 - 0.6)) * 100;
+  document.getElementById('avgIndex').style.background = `linear-gradient(90deg,var(--primary) ${pct}%,#E8EAF6 ${pct}%)`;
+  let meaning;
+  if (val <= 0.65) meaning = '≈ 最低档(60%)缴费';
+  else if (val <= 0.85) meaning = '≈ 社平70-80%档缴费';
+  else if (val <= 1.05) meaning = '按社平工资100%档缴费';
+  else if (val <= 1.5) meaning = '≈ 社平1.1-1.5倍档缴费';
+  else if (val <= 2.0) meaning = '≈ 社平1.5-2倍档缴费';
+  else if (val <= 2.5) meaning = '≈ 社平2-2.5倍档缴费';
+  else meaning = '≈ 封顶档(300%)缴费';
+  document.getElementById('indexMeaning').textContent = meaning;
+}
+
+function switchIndexMode(mode) {
+  indexMode = mode;
+  document.getElementById('tabSimple').classList.toggle('active', mode === 'simple');
+  document.getElementById('tabDetail').classList.toggle('active', mode === 'detail');
+  document.getElementById('simpleMode').style.display = mode === 'simple' ? '' : 'none';
+  document.getElementById('detailMode').style.display = mode === 'detail' ? '' : 'none';
+  if (mode === 'detail' && detailRows.length === 0) initDetailRows();
+  recalc();
+}
+
+function switchGran(g) {
+  granularity = g;
+  document.getElementById('granYear').classList.toggle('active', g === 'year');
+  document.getElementById('granMonth').classList.toggle('active', g === 'month');
+  const headerRow = document.getElementById('detailHeader');
+  if (g === 'month') {
+    headerRow.innerHTML = '<th style="width:42px;">年份</th><th style="width:36px;">月</th><th>缴费基数</th><th>当地月社平</th><th style="width:50px;">指数</th><th style="width:28px;"></th>';
+  } else {
+    headerRow.innerHTML = '<th style="width:50px;">年份</th><th>缴费基数</th><th>当地社平</th><th style="width:52px;">指数</th><th style="width:28px;"></th>';
+  }
+  initDetailRows();
+}
+
+function initDetailRows() {
+  const totalMonths = parseInt(document.getElementById('totalMonths').value) || 300;
+  const prov = getProvince();
+  const growthRate = parseFloat(document.getElementById('growthRate').value) || 8;
+  detailRows = [];
+
+  if (granularity === 'year') {
+    const totalYears = Math.ceil(totalMonths / 12);
+    const startYear = 2025 - totalYears + 1;
+    for (let y = startYear; y <= 2025; y++) {
+      detailRows.push({ year: y, myBase: '', localAvg: estHistAvg(y, prov.avgSalary, growthRate) });
+    }
+  } else {
+    const startYear = 2025 - Math.ceil(totalMonths / 12);
+    for (let y = startYear; y <= 2025; y++) {
+      const months = y === 2025 ? 6 : 12;
+      for (let m = 1; m <= months; m++) {
+        if (detailRows.length >= totalMonths) break;
+        detailRows.push({ year: y, month: m, myBase: '', localAvg: estHistAvg(y, prov.avgSalary, growthRate) });
+      }
+    }
+    detailRows.reverse();
+  }
+  renderDetailTable();
+}
+
+function estHistAvg(year, currentAvg, growthRatePct) {
+  // Prefer real historical data if available
+  const prov = getProvince();
+  const histData = HIST_SALARY[prov.name];
+  if (histData && histData[year]) return histData[year].v;
+  // Fallback to growth rate back-calculation
+  const r = growthRatePct / 100;
+  const yearsBack = 2025 - year;
+  if (yearsBack <= 0) return currentAvg;
+  return Math.round(currentAvg / Math.pow(1 + r, yearsBack));
+}
+
+function renderDetailTable() {
+  const tbody = document.getElementById('detailBody');
+  tbody.innerHTML = '';
+  detailRows.forEach((row, i) => {
+    const tr = document.createElement('tr');
+    const myBase = parseFloat(row.myBase);
+    const localAvg = parseFloat(row.localAvg);
+    const idx = (myBase && localAvg && localAvg > 0) ? (myBase / localAvg).toFixed(3) : '—';
+    if (granularity === 'month') {
+      tr.innerHTML = `<td><strong>${row.year}</strong></td><td>${row.month}</td><td><input type="number" value="${row.myBase}" placeholder="基数" oninput="onDetailInput(${i},'myBase',this.value)"></td><td><input type="number" value="${row.localAvg}" oninput="onDetailInput(${i},'localAvg',this.value)"></td><td class="idx-cell">${idx}</td><td><span class="del-btn" onclick="removeDetailRow(${i})">×</span></td>`;
+    } else {
+      tr.innerHTML = `<td><strong>${row.year}</strong></td><td><input type="number" value="${row.myBase}" placeholder="缴费基数" oninput="onDetailInput(${i},'myBase',this.value)"></td><td><input type="number" value="${row.localAvg}" oninput="onDetailInput(${i},'localAvg',this.value)"></td><td class="idx-cell">${idx}</td><td><span class="del-btn" onclick="removeDetailRow(${i})">×</span></td>`;
+    }
+    tbody.appendChild(tr);
+  });
+  calcDetailAvg();
+}
+
+function onDetailInput(i, field, value) {
+  detailRows[i][field] = value;
+  const row = detailRows[i];
+  const myBase = parseFloat(row.myBase);
+  const localAvg = parseFloat(row.localAvg);
+  const tbody = document.getElementById('detailBody');
+  const idxCell = tbody.rows[i].cells[granularity === 'month' ? 4 : 3];
+  idxCell.textContent = (myBase && localAvg && localAvg > 0) ? (myBase / localAvg).toFixed(3) : '—';
+  calcDetailAvg();
+  recalc();
+}
+
+function addDetailRow() {
+  const lastYear = detailRows.length > 0 ? detailRows[detailRows.length - 1].year : 2024;
+  const prov = getProvince();
+  const growthRate = parseFloat(document.getElementById('growthRate').value) || 8;
+  if (granularity === 'month') {
+    const lastMonth = detailRows.length > 0 ? (detailRows[detailRows.length - 1].month || 12) : 12;
+    let nextYear = lastYear, nextMonth = lastMonth + 1;
+    if (nextMonth > 12) { nextMonth = 1; nextYear++; }
+    detailRows.push({ year: nextYear, month: nextMonth, myBase: '', localAvg: estHistAvg(nextYear, prov.avgSalary, growthRate) });
+  } else {
+    detailRows.push({ year: lastYear + 1, myBase: '', localAvg: estHistAvg(lastYear + 1, prov.avgSalary, growthRate) });
+  }
+  renderDetailTable();
+  recalc();
+}
+
+function removeDetailRow(i) {
+  detailRows.splice(i, 1);
+  renderDetailTable();
+  recalc();
+}
+
+function calcDetailAvg() {
+  let sum = 0, count = 0;
+  detailRows.forEach(row => {
+    const myBase = parseFloat(row.myBase);
+    const localAvg = parseFloat(row.localAvg);
+    if (myBase && localAvg && localAvg > 0) { sum += myBase / localAvg; count++; }
+  });
+  const avg = count > 0 ? (sum / count) : 0;
+  document.getElementById('detailAvgIdx').textContent = avg > 0 ? avg.toFixed(4) : '—';
+  return avg;
+}
+
+function refillLocalAvg() {
+  const prov = getProvince();
+  const growthRate = parseFloat(document.getElementById('growthRate').value) || 8;
+  detailRows.forEach(row => { row.localAvg = estHistAvg(row.year, prov.avgSalary, growthRate); });
+  renderDetailTable();
+}
+
+function onProvinceChange() {
+  const prov = getProvince();
+  document.getElementById('baseSalary').value = prov.avgSalary;
+  if (detailRows.length > 0) refillLocalAvg();
+  recalc();
+}
+
+function resetBase() {
+  const prov = getProvince();
+  document.getElementById('baseSalary').value = prov.avgSalary;
+  recalc();
+}
+
+function onTotalMonthsChange() {
+  const totalMonths = parseInt(document.getElementById('totalMonths').value) || 300;
+  const y = Math.floor(totalMonths / 12);
+  const m = totalMonths % 12;
+  document.getElementById('yearsDisplay').textContent = `= ${y}年${m}个月`;
+  if (indexMode === 'detail') initDetailRows();
+  recalc();
+}
+
+function getAvgIndex() {
+  if (indexMode === 'detail') {
+    const avg = calcDetailAvg();
+    return avg > 0 ? avg : parseFloat(document.getElementById('avgIndex').value);
+  }
+  return parseFloat(document.getElementById('avgIndex').value) || 1.0;
+}
+
+function recalc() {
+  const prov = getProvince();
+  const retireAge = parseInt(ageSelect.value);
+  const totalMonths = parseInt(document.getElementById('totalMonths').value) || 300;
+  const totalYears = totalMonths / 12;
+  const avgIndex = getAvgIndex();
+  const personalAccount = parseFloat(document.getElementById('personalAccount').value) || 0;
+  const startWorkYear = parseInt(document.getElementById('startWorkYear').value) || 0;
+  const deemedIndex = parseFloat(document.getElementById('deemedIndex').value) || 1.0;
+  const baseSalary = parseFloat(document.getElementById('baseSalary').value) || prov.avgSalary;
+
+  const y = Math.floor(totalMonths / 12);
+  const m = totalMonths % 12;
+  document.getElementById('yearsDisplay').textContent = `= ${y}年${m}个月`;
+
+  const months = JIFAYUESHU[retireAge] || 139;
+  const basicPension = baseSalary * (1 + avgIndex) / 2 * totalYears * 0.01;
+  const personalPension = personalAccount / months;
+
+  let deemedYears = 0, transPension = 0;
+  const accountStartYear = prov.accountStartYear;
+  if (startWorkYear > 0 && startWorkYear < accountStartYear) {
+    deemedYears = accountStartYear - startWorkYear;
+    if (deemedYears > totalYears) deemedYears = totalYears;
+    transPension = baseSalary * deemedIndex * deemedYears * (prov.transCoeff / 100);
+  }
+
+  const total = basicPension + personalPension + transPension;
+
+  document.getElementById('totalPension').textContent = Math.round(total).toLocaleString();
+  document.getElementById('basicPension').textContent = Math.round(basicPension).toLocaleString() + ' 元';
+  document.getElementById('personalPension').textContent = Math.round(personalPension).toLocaleString() + ' 元';
+  document.getElementById('transPension').textContent = Math.round(transPension).toLocaleString() + ' 元';
+
+  // Breakdown bars
+  const maxVal = Math.max(basicPension, personalPension, transPension, 1);
+  document.getElementById('basicBar').style.width = (basicPension / maxVal * 100) + '%';
+  document.getElementById('personalBar').style.width = (personalPension / maxVal * 100) + '%';
+  document.getElementById('transBar').style.width = (transPension / maxVal * 100) + '%';
+
+  // Formula detail
+  document.getElementById('jifayueshu').textContent = months;
+  document.getElementById('retireAgeDisplay').textContent = retireAge;
+  document.getElementById('transCoeffDisplay').textContent = prov.transCoeff;
+  document.getElementById('provinceForCoeff').textContent = prov.name;
+  document.getElementById('deemedYearsDisplay').textContent = deemedYears;
+  document.getElementById('avgIdxSourceDisplay').textContent = avgIndex.toFixed(indexMode === 'detail' ? 4 : 2);
+  document.getElementById('avgIdxSourceMode').textContent = indexMode === 'detail' ? `逐年明细（${granularity === 'month' ? '按月' : '按年'}）` : '快速估算';
+
+  const ratio = (total / baseSalary * 100).toFixed(1);
+  document.getElementById('pensionNote').textContent = `约为当地社平工资的 ${ratio}%`;
+}
+
+function estimateAccount() {
+  const prov = getProvince();
+  const totalMonths = parseInt(document.getElementById('totalMonths').value) || 300;
+  const totalYears = totalMonths / 12;
+  const avgIndex = getAvgIndex();
+  const monthlyBase = avgIndex * prov.avgSalary;
+  const monthlyContrib = monthlyBase * 0.08;
+  const annualContrib = monthlyContrib * 12;
+  const rate = 0.04;
+  let total;
+  if (rate > 0) {
+    total = annualContrib * (Math.pow(1 + rate, totalYears) - 1) / rate;
+  } else {
+    total = annualContrib * totalYears;
+  }
+  document.getElementById('personalAccount').value = Math.round(total);
+  recalc();
+}
+
+// CSV
+function handleUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) { parseCSV(e.target.result); };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+  const prov = getProvince();
+  const growthRate = parseFloat(document.getElementById('growthRate').value) || 8;
+  let newRows = [], parsedCount = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    if (i === 0 && /[a-zA-Z\u4e00-\u9fa5]/.test(line.replace(/[,，\t]/g, ''))) continue;
+    const parts = line.split(/[,，\t]/).map(s => s.trim());
+    if (parts.length < 2) continue;
+    const year = parseInt(parts[0]);
+    if (isNaN(year) || year < 1970 || year > 2030) continue;
+
+    if (parts.length >= 3 && parseInt(parts[1]) >= 1 && parseInt(parts[1]) <= 12) {
+      const month = parseInt(parts[1]);
+      const myBase = parseFloat(parts[2]);
+      if (!isNaN(myBase) && myBase > 0) {
+        if (granularity !== 'month') {
+          granularity = 'month';
+          document.getElementById('granYear').classList.remove('active');
+          document.getElementById('granMonth').classList.add('active');
+          document.getElementById('detailHeader').innerHTML = '<th style="width:42px;">年份</th><th style="width:36px;">月</th><th>缴费基数</th><th>当地月社平</th><th style="width:50px;">指数</th><th style="width:28px;"></th>';
+        }
+        newRows.push({ year, month, myBase, localAvg: estHistAvg(year, prov.avgSalary, growthRate) });
+        parsedCount++;
+      }
+    } else {
+      const myBase = parseFloat(parts[1]);
+      if (!isNaN(myBase) && myBase > 0) {
+        if (granularity !== 'year') {
+          granularity = 'year';
+          document.getElementById('granYear').classList.add('active');
+          document.getElementById('granMonth').classList.remove('active');
+          document.getElementById('detailHeader').innerHTML = '<th style="width:50px;">年份</th><th>缴费基数</th><th>当地社平</th><th style="width:52px;">指数</th><th style="width:28px;"></th>';
+        }
+        newRows.push({ year, myBase, localAvg: estHistAvg(year, prov.avgSalary, growthRate) });
+        parsedCount++;
+      }
+    }
+  }
+
+  if (parsedCount === 0) { showToast('❌ 未识别到有效数据'); return; }
+  newRows.sort((a, b) => a.year - b.year || (a.month || 0) - (b.month || 0));
+  detailRows = newRows;
+  renderDetailTable();
+  recalc();
+  showToast(`✅ 已导入 ${parsedCount} 条${granularity === 'month' ? '月度' : '年度'}记录`);
+}
+
+function exportCSV() {
+  const prov = getProvince();
+  const growthRate = parseFloat(document.getElementById('growthRate').value) || 8;
+  let csv = '';
+  if (granularity === 'month') {
+    csv = '年份,月份,缴费基数\n';
+    const totalMonths = parseInt(document.getElementById('totalMonths').value) || 300;
+    const startYear = 2025 - Math.ceil(totalMonths / 12);
+    let count = 0;
+    for (let y = startYear; y <= 2025 && count < totalMonths; y++) {
+      for (let m = 1; m <= 12 && count < totalMonths; m++) { csv += `${y},${m},\n`; count++; }
+    }
+  } else {
+    csv = '年份,缴费基数\n';
+    const totalMonths = parseInt(document.getElementById('totalMonths').value) || 300;
+    const totalYears = Math.ceil(totalMonths / 12);
+    const startYear = 2025 - totalYears + 1;
+    for (let y = startYear; y <= 2025; y++) { csv += `${y},\n`; }
+  }
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `养老金缴费基数模板_${prov.name}.csv`;
+  link.click();
+  showToast('📥 模板已下载');
+}
+
+// ===== Historical Salary Query Module =====
+
+// Official full-caliber monthly average salary data by province and year
+// 2001-2024 Historical Monthly Average Salary Data
+// c: 'n'=非私营在岗职工口径(2001-2018), 'f'=全口径(2019-2024)
+// s: 'o'=official, 'e'=estimated
+// Sources: 国家统计局年鉴, 各省人社厅, m12333.cn, gotohui.com, 天津本地宝
+const HIST_SALARY = {
+  "北京": {2001:{v:1596,s:'o',c:'n'}, 2002:{v:1821,s:'o',c:'n'}, 2003:{v:2109,s:'o',c:'n'}, 2004:{v:2473,s:'o',c:'n'}, 2005:{v:2849,s:'o',c:'n'}, 2006:{v:3343,s:'o',c:'n'}, 2007:{v:3876,s:'o',c:'n'}, 2008:{v:4694,s:'o',c:'n'}, 2009:{v:4845,s:'o',c:'n'}, 2010:{v:5474,s:'o',c:'n'}, 2011:{v:6388,s:'o',c:'n'}, 2012:{v:7186,s:'o',c:'n'}, 2013:{v:7887,s:'o',c:'n'}, 2014:{v:8673,s:'o',c:'n'}, 2015:{v:9423,s:'o',c:'n'}, 2016:{v:10229,s:'o',c:'n'}, 2017:{v:11250,s:'o',c:'n'}, 2018:{v:12487,s:'o',c:'n'}, 2019:{v:8847,s:'o',c:'f'}, 2020:{v:9407,s:'o',c:'f'}, 2021:{v:10628,s:'o',c:'f'}, 2022:{v:11297,s:'o',c:'f'}, 2023:{v:11761,s:'o',c:'f'}, 2024:{v:11937,s:'o',c:'f'}},
+  "天津": {2001:{v:1192,s:'o',c:'n'}, 2002:{v:1355,s:'o',c:'n'}, 2003:{v:1554,s:'o',c:'n'}, 2004:{v:1813,s:'o',c:'n'}, 2005:{v:2106,s:'o',c:'n'}, 2006:{v:2390,s:'o',c:'n'}, 2007:{v:2912,s:'o',c:'n'}, 2008:{v:3479,s:'o',c:'n'}, 2009:{v:3749,s:'o',c:'n'}, 2010:{v:4414,s:'o',c:'n'}, 2011:{v:4711,s:'o',c:'n'}, 2012:{v:5216,s:'o',c:'n'}, 2013:{v:5747,s:'o',c:'n'}, 2014:{v:6172,s:'o',c:'n'}, 2015:{v:6790,s:'o',c:'n'}, 2016:{v:7317,s:'o',c:'n'}, 2017:{v:8080,s:'o',c:'n'}, 2018:{v:8661,s:'o',c:'n'}, 2019:{v:6323,s:'o',c:'f'}, 2020:{v:6777,s:'o',c:'f'}, 2021:{v:7478,s:'o',c:'f'}, 2022:{v:7919,s:'o',c:'f'}, 2023:{v:8355,s:'o',c:'f'}, 2024:{v:8540,s:'o',c:'f'}},
+  "河北": {2001:{v:728,s:'o',c:'n'}, 2002:{v:836,s:'o',c:'n'}, 2003:{v:932,s:'o',c:'n'}, 2004:{v:1077,s:'o',c:'n'}, 2005:{v:1226,s:'o',c:'n'}, 2006:{v:1382,s:'o',c:'n'}, 2007:{v:1659,s:'o',c:'n'}, 2008:{v:2063,s:'o',c:'n'}, 2009:{v:2365,s:'o',c:'n'}, 2010:{v:2692,s:'o',c:'n'}, 2011:{v:2988,s:'o',c:'n'}, 2012:{v:3278,s:'o',c:'n'}, 2013:{v:3519,s:'o',c:'n'}, 2014:{v:3826,s:'o',c:'n'}, 2015:{v:4367,s:'o',c:'n'}, 2016:{v:4749,s:'o',c:'n'}, 2017:{v:5439,s:'o',c:'n'}, 2018:{v:5969,s:'o',c:'n'}, 2019:{v:5070,s:'o',c:'f'}, 2020:{v:5409,s:'o',c:'f'}, 2021:{v:5789,s:'o',c:'f'}, 2022:{v:6211,s:'o',c:'f'}, 2023:{v:6534,s:'o',c:'f'}, 2024:{v:6678,s:'o',c:'f'}},
+  "山西": {2001:{v:677,s:'o',c:'n'}, 2002:{v:780,s:'o',c:'n'}, 2003:{v:894,s:'o',c:'n'}, 2004:{v:1079,s:'o',c:'n'}, 2005:{v:1304,s:'o',c:'n'}, 2006:{v:1525,s:'o',c:'n'}, 2007:{v:1794,s:'o',c:'n'}, 2008:{v:2152,s:'o',c:'n'}, 2009:{v:2372,s:'o',c:'n'}, 2010:{v:2795,s:'o',c:'n'}, 2011:{v:3320,s:'o',c:'n'}, 2012:{v:3751,s:'o',c:'n'}, 2013:{v:3935,s:'o',c:'n'}, 2014:{v:4153,s:'o',c:'n'}, 2015:{v:4413,s:'o',c:'n'}, 2016:{v:4581,s:'o',c:'n'}, 2017:{v:5129,s:'o',c:'n'}, 2018:{v:5639,s:'o',c:'n'}, 2019:{v:5215,s:'o',c:'f'}, 2020:{v:5392,s:'o',c:'f'}, 2021:{v:5914,s:'o',c:'f'}, 2022:{v:6438,s:'o',c:'f'}, 2023:{v:6855,s:'o',c:'f'}, 2024:{v:6997,s:'o',c:'f'}},
+  "内蒙古": {2001:{v:688,s:'o',c:'n'}, 2002:{v:807,s:'o',c:'n'}, 2003:{v:940,s:'o',c:'n'}, 2004:{v:1110,s:'o',c:'n'}, 2005:{v:1332,s:'o',c:'n'}, 2006:{v:1539,s:'o',c:'n'}, 2007:{v:1824,s:'o',c:'n'}, 2008:{v:2176,s:'o',c:'n'}, 2009:{v:2558,s:'o',c:'n'}, 2010:{v:2959,s:'o',c:'n'}, 2011:{v:3480,s:'o',c:'n'}, 2012:{v:3948,s:'o',c:'n'}, 2013:{v:4301,s:'o',c:'n'}, 2014:{v:4558,s:'o',c:'n'}, 2015:{v:4822,s:'o',c:'n'}, 2016:{v:5166,s:'o',c:'n'}, 2017:{v:5641,s:'o',c:'n'}, 2018:{v:6300,s:'o',c:'n'}, 2019:{v:5688,s:'o',c:'f'}, 2020:{v:6344,s:'o',c:'f'}, 2021:{v:6751,s:'o',c:'f'}, 2022:{v:7469,s:'o',c:'f'}, 2023:{v:8105,s:'o',c:'f'}, 2024:{v:8179,s:'o',c:'f'}},
+  "辽宁": {2001:{v:845,s:'o',c:'n'}, 2002:{v:972,s:'o',c:'n'}, 2003:{v:1084,s:'o',c:'n'}, 2004:{v:1243,s:'o',c:'n'}, 2005:{v:1444,s:'o',c:'n'}, 2006:{v:1635,s:'o',c:'n'}, 2007:{v:1934,s:'o',c:'n'}, 2008:{v:2311,s:'o',c:'n'}, 2009:{v:2592,s:'o',c:'n'}, 2010:{v:2921,s:'o',c:'n'}, 2011:{v:3226,s:'o',c:'n'}, 2012:{v:3542,s:'o',c:'n'}, 2013:{v:3859,s:'o',c:'n'}, 2014:{v:4092,s:'o',c:'n'}, 2015:{v:4455,s:'o',c:'n'}, 2016:{v:4762,s:'o',c:'n'}, 2017:{v:5212,s:'o',c:'n'}, 2018:{v:5758,s:'o',c:'n'}, 2019:{v:5309,s:'o',c:'f'}, 2020:{v:5709,s:'o',c:'f'}, 2021:{v:6383,s:'o',c:'f'}, 2022:{v:6843,s:'o',c:'f'}, 2023:{v:7141,s:'o',c:'f'}, 2024:{v:7264,s:'o',c:'f'}},
+  "吉林": {2001:{v:731,s:'o',c:'n'}, 2002:{v:832,s:'o',c:'n'}, 2003:{v:923,s:'o',c:'n'}, 2004:{v:1036,s:'o',c:'n'}, 2005:{v:1201,s:'o',c:'n'}, 2006:{v:1382,s:'o',c:'n'}, 2007:{v:1709,s:'o',c:'n'}, 2008:{v:1957,s:'o',c:'n'}, 2009:{v:2186,s:'o',c:'n'}, 2010:{v:2450,s:'o',c:'n'}, 2011:{v:2845,s:'o',c:'n'}, 2012:{v:3257,s:'o',c:'n'}, 2013:{v:3633,s:'o',c:'n'}, 2014:{v:3945,s:'o',c:'n'}, 2015:{v:4411,s:'o',c:'n'}, 2016:{v:4790,s:'o',c:'n'}, 2017:{v:5242,s:'o',c:'n'}, 2018:{v:5859,s:'o',c:'n'}, 2019:{v:5128,s:'o',c:'f'}, 2020:{v:6005,s:'o',c:'f'}, 2021:{v:6385,s:'o',c:'f'}, 2022:{v:6655,s:'o',c:'f'}, 2023:{v:7179,s:'o',c:'f'}, 2024:{v:7322,s:'o',c:'f'}},
+  "黑龙江": {2001:{v:742,s:'o',c:'n'}, 2002:{v:827,s:'o',c:'n'}, 2003:{v:920,s:'o',c:'n'}, 2004:{v:1046,s:'o',c:'n'}, 2005:{v:1205,s:'o',c:'n'}, 2006:{v:1375,s:'o',c:'n'}, 2007:{v:1616,s:'o',c:'n'}, 2008:{v:1920,s:'o',c:'n'}, 2009:{v:2211,s:'o',c:'n'}, 2010:{v:2467,s:'o',c:'n'}, 2011:{v:2649,s:'o',c:'n'}, 2012:{v:3087,s:'o',c:'n'}, 2013:{v:3459,s:'o',c:'n'}, 2014:{v:3735,s:'o',c:'n'}, 2015:{v:4270,s:'o',c:'n'}, 2016:{v:4608,s:'o',c:'n'}, 2017:{v:5000,s:'o',c:'n'}, 2018:{v:5450,s:'o',c:'n'}, 2019:{v:4735,s:'o',c:'f'}, 2020:{v:5141,s:'o',c:'f'}, 2021:{v:5865,s:'o',c:'f'}, 2022:{v:6430,s:'o',c:'f'}, 2023:{v:7010,s:'o',c:'f'}, 2024:{v:7570,s:'o',c:'f'}},
+  "上海": {2001:{v:1815,s:'o',c:'n'}, 2002:{v:1997,s:'o',c:'n'}, 2003:{v:2275,s:'o',c:'n'}, 2004:{v:2507,s:'o',c:'n'}, 2005:{v:2862,s:'o',c:'n'}, 2006:{v:3432,s:'o',c:'n'}, 2007:{v:4109,s:'o',c:'n'}, 2008:{v:4714,s:'o',c:'n'}, 2009:{v:5296,s:'o',c:'n'}, 2010:{v:5990,s:'o',c:'n'}, 2011:{v:6398,s:'o',c:'n'}, 2012:{v:6671,s:'o',c:'n'}, 2013:{v:7709,s:'o',c:'n'}, 2014:{v:8502,s:'o',c:'n'}, 2015:{v:9107,s:'o',c:'n'}, 2016:{v:10042,s:'o',c:'n'}, 2017:{v:10897,s:'o',c:'n'}, 2018:{v:11915,s:'o',c:'n'}, 2019:{v:9580,s:'o',c:'f'}, 2020:{v:10338,s:'o',c:'f'}, 2021:{v:11396,s:'o',c:'f'}, 2022:{v:12183,s:'o',c:'f'}, 2023:{v:12307,s:'o',c:'f'}, 2024:{v:12434,s:'o',c:'f'}},
+  "江苏": {2001:{v:987,s:'o',c:'n'}, 2002:{v:1126,s:'o',c:'n'}, 2003:{v:1309,s:'o',c:'n'}, 2004:{v:1517,s:'o',c:'n'}, 2005:{v:1746,s:'o',c:'n'}, 2006:{v:1982,s:'o',c:'n'}, 2007:{v:2281,s:'o',c:'n'}, 2008:{v:2639,s:'o',c:'n'}, 2009:{v:2991,s:'o',c:'n'}, 2010:{v:3375,s:'o',c:'n'}, 2011:{v:3832,s:'o',c:'n'}, 2012:{v:4195,s:'o',c:'n'}, 2013:{v:4774,s:'o',c:'n'}, 2014:{v:5104,s:'o',c:'n'}, 2015:{v:5600,s:'o',c:'n'}, 2016:{v:6057,s:'o',c:'n'}, 2017:{v:6645,s:'o',c:'n'}, 2018:{v:7216,s:'o',c:'n'}, 2019:{v:6210,s:'e',c:'f'}, 2020:{v:6862,s:'o',c:'f'}, 2021:{v:7490,s:'o',c:'f'}, 2022:{v:8014,s:'o',c:'f'}, 2023:{v:8132,s:'o',c:'f'}, 2024:{v:8254,s:'o',c:'f'}},
+  "浙江": {2001:{v:1365,s:'o',c:'n'}, 2002:{v:1565,s:'o',c:'n'}, 2003:{v:1781,s:'o',c:'n'}, 2004:{v:1959,s:'o',c:'n'}, 2005:{v:2158,s:'o',c:'n'}, 2006:{v:2318,s:'o',c:'n'}, 2007:{v:2590,s:'o',c:'n'}, 2008:{v:2846,s:'o',c:'n'}, 2009:{v:3116,s:'o',c:'n'}, 2010:{v:3459,s:'o',c:'n'}, 2011:{v:3888,s:'o',c:'n'}, 2012:{v:4230,s:'o',c:'n'}, 2013:{v:4566,s:'o',c:'n'}, 2014:{v:4986,s:'o',c:'n'}, 2015:{v:5642,s:'o',c:'n'}, 2016:{v:6220,s:'o',c:'n'}, 2017:{v:6887,s:'o',c:'n'}, 2018:{v:7571,s:'o',c:'n'}, 2019:{v:6690,s:'o',c:'f'}, 2020:{v:6594,s:'o',c:'f'}, 2021:{v:7435,s:'o',c:'f'}, 2022:{v:8020,s:'o',c:'f'}, 2023:{v:8310,s:'o',c:'f'}, 2024:{v:8433,s:'o',c:'f'}},
+  "安徽": {2001:{v:659,s:'o',c:'n'}, 2002:{v:775,s:'o',c:'n'}, 2003:{v:882,s:'o',c:'n'}, 2004:{v:1077,s:'o',c:'n'}, 2005:{v:1278,s:'o',c:'n'}, 2006:{v:1496,s:'o',c:'n'}, 2007:{v:1848,s:'o',c:'n'}, 2008:{v:2197,s:'o',c:'n'}, 2009:{v:2472,s:'o',c:'n'}, 2010:{v:2862,s:'o',c:'n'}, 2011:{v:3330,s:'o',c:'n'}, 2012:{v:3782,s:'o',c:'n'}, 2013:{v:4054,s:'o',c:'n'}, 2014:{v:4316,s:'o',c:'n'}, 2015:{v:4748,s:'o',c:'n'}, 2016:{v:5107,s:'o',c:'n'}, 2017:{v:5661,s:'o',c:'n'}, 2018:{v:6433,s:'o',c:'n'}, 2019:{v:5526,s:'o',c:'f'}, 2020:{v:5975,s:'o',c:'f'}, 2021:{v:6387,s:'o',c:'f'}, 2022:{v:6698,s:'o',c:'f'}, 2023:{v:7044,s:'o',c:'f'}, 2024:{v:7185,s:'o',c:'f'}},
+  "福建": {2001:{v:1001,s:'o',c:'n'}, 2002:{v:1109,s:'o',c:'n'}, 2003:{v:1192,s:'o',c:'n'}, 2004:{v:1300,s:'o',c:'n'}, 2005:{v:1429,s:'o',c:'n'}, 2006:{v:1610,s:'o',c:'n'}, 2007:{v:1857,s:'o',c:'n'}, 2008:{v:2142,s:'o',c:'n'}, 2009:{v:2389,s:'o',c:'n'}, 2010:{v:2721,s:'o',c:'n'}, 2011:{v:3266,s:'o',c:'n'}, 2012:{v:3776,s:'o',c:'n'}, 2013:{v:4116,s:'o',c:'n'}, 2014:{v:4531,s:'o',c:'n'}, 2015:{v:4893,s:'o',c:'n'}, 2016:{v:5262,s:'o',c:'n'}, 2017:{v:5752,s:'o',c:'n'}, 2018:{v:6356,s:'o',c:'n'}, 2019:{v:5835,s:'o',c:'f'}, 2020:{v:6126,s:'o',c:'f'}, 2021:{v:6654,s:'o',c:'f'}, 2022:{v:7020,s:'o',c:'f'}, 2023:{v:7535,s:'o',c:'f'}, 2024:{v:7535,s:'o',c:'f'}},
+  "江西": {2001:{v:669,s:'o',c:'n'}, 2002:{v:772,s:'o',c:'n'}, 2003:{v:877,s:'o',c:'n'}, 2004:{v:988,s:'o',c:'n'}, 2005:{v:1141,s:'o',c:'n'}, 2006:{v:1299,s:'o',c:'n'}, 2007:{v:1533,s:'o',c:'n'}, 2008:{v:1750,s:'o',c:'n'}, 2009:{v:2058,s:'o',c:'n'}, 2010:{v:2424,s:'o',c:'n'}, 2011:{v:2813,s:'o',c:'n'}, 2012:{v:3266,s:'o',c:'n'}, 2013:{v:3602,s:'o',c:'n'}, 2014:{v:3920,s:'o',c:'n'}, 2015:{v:4345,s:'o',c:'n'}, 2016:{v:4789,s:'o',c:'n'}, 2017:{v:5256,s:'o',c:'n'}, 2018:{v:5898,s:'o',c:'n'}, 2019:{v:4736,s:'o',c:'f'}, 2020:{v:5548,s:'o',c:'f'}, 2021:{v:5880,s:'o',c:'f'}, 2022:{v:6098,s:'o',c:'f'}, 2023:{v:6397,s:'o',c:'f'}, 2024:{v:6525,s:'o',c:'f'}},
+  "山东": {2001:{v:834,s:'o',c:'n'}, 2002:{v:948,s:'o',c:'n'}, 2003:{v:1047,s:'o',c:'n'}, 2004:{v:1194,s:'o',c:'n'}, 2005:{v:1384,s:'o',c:'n'}, 2006:{v:1602,s:'o',c:'n'}, 2007:{v:1904,s:'o',c:'n'}, 2008:{v:2200,s:'o',c:'n'}, 2009:{v:2474,s:'o',c:'n'}, 2010:{v:2811,s:'o',c:'n'}, 2011:{v:3166,s:'o',c:'n'}, 2012:{v:3492,s:'o',c:'n'}, 2013:{v:3971,s:'o',c:'n'}, 2014:{v:4319,s:'o',c:'n'}, 2015:{v:4850,s:'o',c:'n'}, 2016:{v:5297,s:'o',c:'n'}, 2017:{v:5775,s:'o',c:'n'}, 2018:{v:6260,s:'o',c:'n'}, 2019:{v:6240,s:'o',c:'f'}, 2020:{v:6242,s:'o',c:'f'}, 2021:{v:6633,s:'o',c:'f'}, 2022:{v:7069,s:'o',c:'f'}, 2023:{v:7359,s:'o',c:'f'}, 2024:{v:7506,s:'o',c:'f'}},
+  "河南": {2001:{v:660,s:'o',c:'n'}, 2002:{v:764,s:'o',c:'n'}, 2003:{v:896,s:'o',c:'n'}, 2004:{v:1010,s:'o',c:'n'}, 2005:{v:1190,s:'o',c:'n'}, 2006:{v:1415,s:'o',c:'n'}, 2007:{v:1745,s:'o',c:'n'}, 2008:{v:2068,s:'o',c:'n'}, 2009:{v:2280,s:'o',c:'n'}, 2010:{v:2525,s:'o',c:'n'}, 2011:{v:2803,s:'o',c:'n'}, 2012:{v:3112,s:'o',c:'n'}, 2013:{v:3192,s:'o',c:'n'}, 2014:{v:3556,s:'o',c:'n'}, 2015:{v:3827,s:'o',c:'n'}, 2016:{v:4169,s:'o',c:'n'}, 2017:{v:4666,s:'o',c:'n'}, 2018:{v:5346,s:'o',c:'n'}, 2019:{v:4975,s:'o',c:'f'}, 2020:{v:5328,s:'o',c:'f'}, 2021:{v:5681,s:'o',c:'f'}, 2022:{v:5965,s:'o',c:'f'}, 2023:{v:6260,s:'o',c:'f'}, 2024:{v:6385,s:'o',c:'f'}},
+  "湖北": {2001:{v:718,s:'o',c:'n'}, 2002:{v:801,s:'o',c:'n'}, 2003:{v:891,s:'o',c:'n'}, 2004:{v:988,s:'o',c:'n'}, 2005:{v:1202,s:'o',c:'n'}, 2006:{v:1337,s:'o',c:'n'}, 2007:{v:1652,s:'o',c:'n'}, 2008:{v:1895,s:'o',c:'n'}, 2009:{v:2261,s:'o',c:'n'}, 2010:{v:2716,s:'o',c:'n'}, 2011:{v:3058,s:'o',c:'n'}, 2012:{v:3379,s:'o',c:'n'}, 2013:{v:3723,s:'o',c:'n'}, 2014:{v:4227,s:'o',c:'n'}, 2015:{v:4603,s:'o',c:'n'}, 2016:{v:5093,s:'o',c:'n'}, 2017:{v:5645,s:'o',c:'n'}, 2018:{v:6335,s:'o',c:'n'}, 2019:{v:6233,s:'o',c:'f'}, 2020:{v:6233,s:'o',c:'f'}, 2021:{v:6795,s:'o',c:'f'}, 2022:{v:7040,s:'o',c:'f'}, 2023:{v:7489,s:'o',c:'f'}, 2024:{v:7496,s:'o',c:'f'}},
+  "湖南": {2001:{v:802,s:'o',c:'n'}, 2002:{v:914,s:'o',c:'n'}, 2003:{v:1018,s:'o',c:'n'}, 2004:{v:1161,s:'o',c:'n'}, 2005:{v:1305,s:'o',c:'n'}, 2006:{v:1488,s:'o',c:'n'}, 2007:{v:1794,s:'o',c:'n'}, 2008:{v:2072,s:'o',c:'n'}, 2009:{v:2274,s:'o',c:'n'}, 2010:{v:2540,s:'o',c:'n'}, 2011:{v:2960,s:'o',c:'n'}, 2012:{v:3336,s:'o',c:'n'}, 2013:{v:3658,s:'o',c:'n'}, 2014:{v:4044,s:'o',c:'n'}, 2015:{v:4491,s:'o',c:'n'}, 2016:{v:5013,s:'o',c:'n'}, 2017:{v:5500,s:'o',c:'n'}, 2018:{v:6108,s:'o',c:'n'}, 2019:{v:5211,s:'o',c:'f'}, 2020:{v:5460,s:'o',c:'f'}, 2021:{v:5977,s:'o',c:'f'}, 2022:{v:6284,s:'o',c:'f'}, 2023:{v:6711,s:'o',c:'f'}, 2024:{v:6787,s:'o',c:'f'}},
+  "广东(含深圳)": {2001:{v:1307,s:'o',c:'n'}, 2002:{v:1484,s:'o',c:'n'}, 2003:{v:1666,s:'o',c:'n'}, 2004:{v:1843,s:'o',c:'n'}, 2005:{v:1997,s:'o',c:'n'}, 2006:{v:2182,s:'o',c:'n'}, 2007:{v:2454,s:'o',c:'n'}, 2008:{v:2759,s:'o',c:'n'}, 2009:{v:3030,s:'o',c:'n'}, 2010:{v:3363,s:'o',c:'n'}, 2011:{v:3763,s:'o',c:'n'}, 2012:{v:4215,s:'o',c:'n'}, 2013:{v:4468,s:'o',c:'n'}, 2014:{v:4986,s:'o',c:'n'}, 2015:{v:5525,s:'o',c:'n'}, 2016:{v:6071,s:'o',c:'n'}, 2017:{v:6668,s:'o',c:'n'}, 2018:{v:7486,s:'o',c:'n'}, 2019:{v:6756,s:'o',c:'f'}, 2020:{v:7647,s:'o',c:'f'}, 2021:{v:8310,s:'o',c:'f'}, 2022:{v:8807,s:'o',c:'f'}, 2023:{v:9167,s:'o',c:'f'}, 2024:{v:9183,s:'o',c:'f'}},
+  "深圳": {2001:{v:2162,s:'o',c:'n'}, 2002:{v:2352,s:'o',c:'n'}, 2003:{v:2551,s:'o',c:'n'}, 2004:{v:2661,s:'o',c:'n'}, 2005:{v:2706,s:'o',c:'n'}, 2006:{v:2926,s:'o',c:'n'}, 2007:{v:3233,s:'o',c:'n'}, 2008:{v:3621,s:'o',c:'n'}, 2009:{v:3894,s:'o',c:'n'}, 2010:{v:4205,s:'o',c:'n'}, 2011:{v:4595,s:'o',c:'n'}, 2012:{v:4918,s:'o',c:'n'}, 2013:{v:5218,s:'o',c:'n'}, 2014:{v:6054,s:'o',c:'n'}, 2015:{v:6753,s:'o',c:'n'}, 2016:{v:7480,s:'o',c:'n'}, 2017:{v:8348,s:'o',c:'n'}, 2018:{v:9309,s:'o',c:'n'}, 2019:{v:10646,s:'o',c:'n'}, 2020:{v:11620,s:'o',c:'n'}, 2021:{v:12964,s:'o',c:'n'}, 2022:{v:13730,s:'o',c:'n'}, 2023:{v:14553,s:'o',c:'n'}, 2024:{v:14755,s:'o',c:'n'}},
+  "广西": {2001:{v:756,s:'o',c:'n'}, 2002:{v:857,s:'o',c:'n'}, 2003:{v:992,s:'o',c:'n'}, 2004:{v:1131,s:'o',c:'n'}, 2005:{v:1288,s:'o',c:'n'}, 2006:{v:1503,s:'o',c:'n'}, 2007:{v:1780,s:'o',c:'n'}, 2008:{v:2119,s:'o',c:'n'}, 2009:{v:2358,s:'o',c:'n'}, 2010:{v:2654,s:'o',c:'n'}, 2011:{v:2796,s:'o',c:'n'}, 2012:{v:3086,s:'o',c:'n'}, 2013:{v:3510,s:'o',c:'n'}, 2014:{v:3852,s:'o',c:'n'}, 2015:{v:4582,s:'o',c:'n'}, 2016:{v:5020,s:'o',c:'n'}, 2017:{v:5538,s:'o',c:'n'}, 2018:{v:6129,s:'o',c:'n'}, 2019:{v:4878,s:'o',c:'f'}, 2020:{v:5819,s:'o',c:'f'}, 2021:{v:6197,s:'o',c:'f'}, 2022:{v:6439,s:'o',c:'f'}, 2023:{v:6756,s:'o',c:'f'}, 2024:{v:6905,s:'o',c:'f'}},
+  "海南": {2001:{v:693,s:'o',c:'n'}, 2002:{v:790,s:'o',c:'n'}, 2003:{v:866,s:'o',c:'n'}, 2004:{v:979,s:'o',c:'n'}, 2005:{v:1151,s:'o',c:'n'}, 2006:{v:1320,s:'o',c:'n'}, 2007:{v:1613,s:'o',c:'n'}, 2008:{v:1831,s:'o',c:'n'}, 2009:{v:2078,s:'o',c:'n'}, 2010:{v:2585,s:'o',c:'n'}, 2011:{v:3067,s:'o',c:'n'}, 2012:{v:3348,s:'o',c:'n'}, 2013:{v:3814,s:'o',c:'n'}, 2014:{v:4230,s:'o',c:'n'}, 2015:{v:4867,s:'o',c:'n'}, 2016:{v:5214,s:'o',c:'n'}, 2017:{v:5755,s:'o',c:'n'}, 2018:{v:6473,s:'o',c:'n'}, 2019:{v:5958,s:'o',c:'f'}, 2020:{v:6543,s:'o',c:'f'}, 2021:{v:6874,s:'o',c:'f'}, 2022:{v:8050,s:'o',c:'f'}, 2023:{v:8089,s:'o',c:'f'}, 2024:{v:8188,s:'o',c:'f'}},
+  "重庆": {2001:{v:794,s:'o',c:'n'}, 2002:{v:913,s:'o',c:'n'}, 2003:{v:1048,s:'o',c:'n'}, 2004:{v:1197,s:'o',c:'n'}, 2005:{v:1386,s:'o',c:'n'}, 2006:{v:1614,s:'o',c:'n'}, 2007:{v:1894,s:'o',c:'n'}, 2008:{v:2249,s:'o',c:'n'}, 2009:{v:2580,s:'o',c:'n'}, 2010:{v:2944,s:'o',c:'n'}, 2011:{v:3337,s:'o',c:'n'}, 2012:{v:3773,s:'o',c:'n'}, 2013:{v:4241,s:'o',c:'n'}, 2014:{v:4714,s:'o',c:'n'}, 2015:{v:5174,s:'o',c:'n'}, 2016:{v:5616,s:'o',c:'n'}, 2017:{v:6106,s:'o',c:'n'}, 2018:{v:6814,s:'o',c:'n'}, 2019:{v:5819,s:'o',c:'f'}, 2020:{v:6165,s:'o',c:'f'}, 2021:{v:6594,s:'o',c:'f'}, 2022:{v:6863,s:'o',c:'f'}, 2023:{v:7266,s:'o',c:'f'}, 2024:{v:7339,s:'o',c:'f'}},
+  "四川": {2001:{v:828,s:'o',c:'n'}, 2002:{v:955,s:'o',c:'n'}, 2003:{v:1065,s:'o',c:'n'}, 2004:{v:1247,s:'o',c:'n'}, 2005:{v:1432,s:'o',c:'n'}, 2006:{v:1614,s:'o',c:'n'}, 2007:{v:1879,s:'o',c:'n'}, 2008:{v:2147,s:'o',c:'n'}, 2009:{v:2374,s:'o',c:'n'}, 2010:{v:2759,s:'o',c:'n'}, 2011:{v:3160,s:'o',c:'n'}, 2012:{v:3592,s:'o',c:'n'}, 2013:{v:4085,s:'o',c:'n'}, 2014:{v:4477,s:'o',c:'n'}, 2015:{v:5043,s:'o',c:'n'}, 2016:{v:5482,s:'o',c:'n'}, 2017:{v:5969,s:'o',c:'n'}, 2018:{v:6705,s:'o',c:'n'}, 2019:{v:5976,s:'o',c:'f'}, 2020:{v:6210,s:'o',c:'f'}, 2021:{v:6785,s:'o',c:'f'}, 2022:{v:7076,s:'o',c:'f'}, 2023:{v:7518,s:'o',c:'f'}, 2024:{v:7646,s:'o',c:'f'}},
+  "贵州": {2001:{v:749,s:'o',c:'n'}, 2002:{v:890,s:'o',c:'n'}, 2003:{v:999,s:'o',c:'n'}, 2004:{v:1145,s:'o',c:'n'}, 2005:{v:1326,s:'o',c:'n'}, 2006:{v:1512,s:'o',c:'n'}, 2007:{v:1746,s:'o',c:'n'}, 2008:{v:2033,s:'o',c:'n'}, 2009:{v:2272,s:'o',c:'n'}, 2010:{v:2536,s:'o',c:'n'}, 2011:{v:3055,s:'o',c:'n'}, 2012:{v:3490,s:'o',c:'n'}, 2013:{v:4016,s:'o',c:'n'}, 2014:{v:4476,s:'o',c:'n'}, 2015:{v:5216,s:'o',c:'n'}, 2016:{v:5806,s:'o',c:'n'}, 2017:{v:6259,s:'o',c:'n'}, 2018:{v:6883,s:'o',c:'n'}, 2019:{v:5703,s:'o',c:'f'}, 2020:{v:6379,s:'o',c:'f'}, 2021:{v:6798,s:'o',c:'f'}, 2022:{v:6858,s:'o',c:'f'}, 2023:{v:7272,s:'o',c:'f'}, 2024:{v:7324,s:'o',c:'f'}},
+  "云南": {2001:{v:878,s:'o',c:'n'}, 2002:{v:1041,s:'o',c:'n'}, 2003:{v:1149,s:'o',c:'n'}, 2004:{v:1294,s:'o',c:'n'}, 2005:{v:1441,s:'o',c:'n'}, 2006:{v:1602,s:'o',c:'n'}, 2007:{v:1755,s:'o',c:'n'}, 2008:{v:1978,s:'o',c:'n'}, 2009:{v:2184,s:'o',c:'n'}, 2010:{v:2485,s:'o',c:'n'}, 2011:{v:2878,s:'o',c:'n'}, 2012:{v:3191,s:'o',c:'n'}, 2013:{v:3600,s:'o',c:'n'}, 2014:{v:3910,s:'o',c:'n'}, 2015:{v:4585,s:'o',c:'n'}, 2016:{v:5297,s:'o',c:'n'}, 2017:{v:6126,s:'o',c:'n'}, 2018:{v:6710,s:'o',c:'n'}, 2019:{v:5720,s:'o',c:'f'}, 2020:{v:6286,s:'o',c:'f'}, 2021:{v:6622,s:'o',c:'f'}, 2022:{v:6906,s:'o',c:'f'}, 2023:{v:7177,s:'o',c:'f'}, 2024:{v:7263,s:'o',c:'f'}},
+  "西藏": {2001:{v:1595,s:'o',c:'n'}, 2002:{v:1972,s:'o',c:'n'}, 2003:{v:2244,s:'o',c:'n'}, 2004:{v:2573,s:'o',c:'n'}, 2005:{v:2412,s:'o',c:'n'}, 2006:{v:2626,s:'o',c:'n'}, 2007:{v:3535,s:'o',c:'n'}, 2008:{v:3969,s:'o',c:'n'}, 2009:{v:4077,s:'o',c:'n'}, 2010:{v:4158,s:'o',c:'n'}, 2011:{v:4186,s:'o',c:'n'}, 2012:{v:4385,s:'o',c:'n'}, 2013:{v:4899,s:'o',c:'n'}, 2014:{v:5100,s:'o',c:'n'}, 2015:{v:5929,s:'o',c:'n'}, 2016:{v:6708,s:'o',c:'n'}, 2017:{v:7587,s:'o',c:'n'}, 2018:{v:7815,s:'o',c:'n'}, 2019:{v:8143,s:'o',c:'f'}, 2020:{v:8839,s:'o',c:'f'}, 2021:{v:9900,s:'o',c:'f'}, 2022:{v:10791,s:'o',c:'f'}, 2023:{v:11546,s:'o',c:'f'}, 2024:{v:11777,s:'o',c:'f'}},
+  "陕西": {2001:{v:760,s:'o',c:'n'}, 2002:{v:892,s:'o',c:'n'}, 2003:{v:1026,s:'o',c:'n'}, 2004:{v:1178,s:'o',c:'n'}, 2005:{v:1368,s:'o',c:'n'}, 2006:{v:1528,s:'o',c:'n'}, 2007:{v:1808,s:'o',c:'n'}, 2008:{v:2145,s:'o',c:'n'}, 2009:{v:2382,s:'o',c:'n'}, 2010:{v:2782,s:'o',c:'n'}, 2011:{v:3228,s:'o',c:'n'}, 2012:{v:3653,s:'o',c:'n'}, 2013:{v:4023,s:'o',c:'n'}, 2014:{v:4286,s:'o',c:'n'}, 2015:{v:4741,s:'o',c:'n'}, 2016:{v:5136,s:'o',c:'n'}, 2017:{v:5619,s:'o',c:'n'}, 2018:{v:6249,s:'o',c:'n'}, 2019:{v:6035,s:'o',c:'f'}, 2020:{v:6053,s:'o',c:'f'}, 2021:{v:6543,s:'o',c:'f'}, 2022:{v:7029,s:'o',c:'f'}, 2023:{v:7598,s:'o',c:'f'}, 2024:{v:7750,s:'o',c:'f'}},
+  "甘肃": {2001:{v:829,s:'o',c:'n'}, 2002:{v:1026,s:'o',c:'n'}, 2003:{v:1135,s:'o',c:'n'}, 2004:{v:1288,s:'o',c:'n'}, 2005:{v:1435,s:'o',c:'n'}, 2006:{v:1628,s:'o',c:'n'}, 2007:{v:1845,s:'o',c:'n'}, 2008:{v:2064,s:'o',c:'n'}, 2009:{v:2265,s:'o',c:'n'}, 2010:{v:2465,s:'o',c:'n'}, 2011:{v:2716,s:'o',c:'n'}, 2012:{v:3195,s:'o',c:'n'}, 2013:{v:3632,s:'o',c:'n'}, 2014:{v:3983,s:'o',c:'n'}, 2015:{v:4538,s:'o',c:'n'}, 2016:{v:4962,s:'o',c:'n'}, 2017:{v:5477,s:'o',c:'n'}, 2018:{v:6142,s:'o',c:'n'}, 2019:{v:5156,s:'o',c:'f'}, 2020:{v:6063,s:'o',c:'f'}, 2021:{v:6400,s:'o',c:'f'}, 2022:{v:6816,s:'o',c:'f'}, 2023:{v:7194,s:'o',c:'f'}, 2024:{v:7338,s:'o',c:'f'}},
+  "青海": {2001:{v:1076,s:'o',c:'n'}, 2002:{v:1228,s:'o',c:'n'}, 2003:{v:1313,s:'o',c:'n'}, 2004:{v:1436,s:'o',c:'n'}, 2005:{v:1590,s:'o',c:'n'}, 2006:{v:1852,s:'o',c:'n'}, 2007:{v:2144,s:'o',c:'n'}, 2008:{v:2585,s:'o',c:'n'}, 2009:{v:2798,s:'o',c:'n'}, 2010:{v:3099,s:'o',c:'n'}, 2011:{v:3501,s:'o',c:'n'}, 2012:{v:3942,s:'o',c:'n'}, 2013:{v:4358,s:'o',c:'n'}, 2014:{v:4841,s:'o',c:'n'}, 2015:{v:5156,s:'o',c:'n'}, 2016:{v:5621,s:'o',c:'n'}, 2017:{v:6378,s:'o',c:'n'}, 2018:{v:7242,s:'o',c:'n'}, 2019:{v:6767,s:'o',c:'f'}, 2020:{v:7023,s:'o',c:'f'}, 2021:{v:7604,s:'o',c:'f'}, 2022:{v:8029,s:'o',c:'f'}, 2023:{v:8643,s:'o',c:'f'}, 2024:{v:8816,s:'o',c:'f'}},
+  "宁夏": {2001:{v:870,s:'o',c:'n'}, 2002:{v:1017,s:'o',c:'n'}, 2003:{v:1126,s:'o',c:'n'}, 2004:{v:1294,s:'o',c:'n'}, 2005:{v:1494,s:'o',c:'n'}, 2006:{v:1758,s:'o',c:'n'}, 2007:{v:2214,s:'o',c:'n'}, 2008:{v:2559,s:'o',c:'n'}, 2009:{v:2840,s:'o',c:'n'}, 2010:{v:3279,s:'o',c:'n'}, 2011:{v:3614,s:'o',c:'n'}, 2012:{v:4023,s:'o',c:'n'}, 2013:{v:4280,s:'o',c:'n'}, 2014:{v:4652,s:'o',c:'n'}, 2015:{v:5207,s:'o',c:'n'}, 2016:{v:5652,s:'o',c:'n'}, 2017:{v:6065,s:'o',c:'n'}, 2018:{v:6829,s:'o',c:'n'}, 2019:{v:6050,s:'o',c:'f'}, 2020:{v:6110,s:'o',c:'f'}, 2021:{v:7104,s:'o',c:'f'}, 2022:{v:7989,s:'o',c:'f'}, 2023:{v:8088,s:'o',c:'f'}, 2024:{v:8258,s:'o',c:'f'}},
+  "新疆": {2001:{v:856,s:'o',c:'n'}, 2002:{v:967,s:'o',c:'n'}, 2003:{v:1105,s:'o',c:'n'}, 2004:{v:1243,s:'o',c:'n'}, 2005:{v:1418,s:'o',c:'n'}, 2006:{v:1589,s:'o',c:'n'}, 2007:{v:1854,s:'o',c:'n'}, 2008:{v:2119,s:'o',c:'n'}, 2009:{v:2318,s:'o',c:'n'}, 2010:{v:2697,s:'o',c:'n'}, 2011:{v:3236,s:'o',c:'n'}, 2012:{v:3780,s:'o',c:'n'}, 2013:{v:4161,s:'o',c:'n'}, 2014:{v:4535,s:'o',c:'n'}, 2015:{v:5076,s:'o',c:'n'}, 2016:{v:5386,s:'o',c:'n'}, 2017:{v:5720,s:'o',c:'n'}, 2018:{v:6392,s:'o',c:'n'}, 2019:{v:6105,s:'o',c:'f'}, 2020:{v:6531,s:'o',c:'f'}, 2021:{v:7089,s:'o',c:'f'}, 2022:{v:8020,s:'o',c:'f'}, 2023:{v:8332,s:'o',c:'f'}, 2024:{v:8448,s:'o',c:'f'}},
+  "广东_第一档": {2019:{v:7880,s:'o',c:'f'}, 2020:{v:8919,s:'o',c:'f'}, 2021:{v:9721,s:'o',c:'f'}, 2022:{v:10242,s:'o',c:'f'}, 2023:{v:10449,s:'o',c:'f'}, 2024:{v:10468,s:'o',c:'f'}},
+  "广东_第二档": {2019:{v:5855,s:'o',c:'f'}, 2020:{v:6597,s:'o',c:'f'}, 2021:{v:7233,s:'o',c:'f'}, 2022:{v:7629,s:'o',c:'f'}, 2023:{v:7827,s:'o',c:'f'}, 2024:{v:7964,s:'o',c:'f'}},
+  "广东_第三档": {2019:{v:5400,s:'o',c:'f'}, 2020:{v:6122,s:'o',c:'f'}, 2021:{v:6627,s:'o',c:'f'}, 2022:{v:6982,s:'o',c:'f'}, 2023:{v:7210,s:'o',c:'f'}, 2024:{v:7267,s:'o',c:'f'}},
+  "广东_第四档": {2019:{v:5325,s:'o',c:'f'}, 2020:{v:6334,s:'o',c:'f'}, 2021:{v:6932,s:'o',c:'f'}, 2022:{v:7276,s:'o',c:'f'}, 2023:{v:7471,s:'o',c:'f'}, 2024:{v:7729,s:'o',c:'f'}},
+  "湖北_第一档": {2019:{v:6233,s:'o',c:'f'}, 2020:{v:6233,s:'o',c:'f'}, 2021:{v:6795,s:'o',c:'f'}, 2022:{v:7040,s:'o',c:'f'}, 2023:{v:7489,s:'o',c:'f'}, 2024:{v:7496,s:'o',c:'f'}},
+  "湖北_第二档": {2019:{v:4800,s:'o',c:'f'}, 2020:{v:5250,s:'o',c:'f'}, 2021:{v:6000,s:'o',c:'f'}, 2022:{v:6500,s:'o',c:'f'}, 2023:{v:6948,s:'o',c:'f'}, 2024:{v:7226,s:'o',c:'f'}},
+  "湖北_第三档": {2019:{v:4500,s:'o',c:'f'}, 2020:{v:5000,s:'o',c:'f'}, 2021:{v:5750,s:'o',c:'f'}, 2022:{v:6300,s:'o',c:'f'}, 2023:{v:6805,s:'o',c:'f'}, 2024:{v:7154,s:'o',c:'f'}}
+};
+
+let histChartVisible = false;
+
+// Sub-region tier definitions
+const HIST_TIERS = {
+  "湖北": [
+    {label:"全省（第一档）", key:"湖北_第一档"},
+    {label:"第二档", key:"湖北_第二档"},
+    {label:"第三档", key:"湖北_第三档"}
+  ],
+  "广东(含深圳)": [
+    {label:"第一档（广州/省直）", key:"广东_第一档"},
+    {label:"第二档（珠海/佛山/东莞/中山）", key:"广东_第二档"},
+    {label:"第三档（汕头/惠州等）", key:"广东_第三档"},
+    {label:"第四档（其余地市）", key:"广东_第四档"}
+  ]
+};
+
+// Init historical province dropdown
+const histProvSelect = document.getElementById('histProvince');
+const histTierSelect = document.getElementById('histTier');
+const histTierRow = document.getElementById('histTierRow');
+
+PROVINCES.forEach((p, i) => {
+  const opt = document.createElement('option');
+  opt.value = p.name;
+  opt.textContent = p.name;
+  histProvSelect.appendChild(opt);
+});
+
+function onHistProvChange() {
+  const provName = histProvSelect.value;
+  const tiers = HIST_TIERS[provName];
+  
+  // Clear and populate tier dropdown
+  histTierSelect.innerHTML = '';
+  if (tiers) {
+    tiers.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.key;
+      opt.textContent = t.label;
+      histTierSelect.appendChild(opt);
+    });
+    histTierRow.style.display = '';
+  } else {
+    histTierRow.style.display = 'none';
+  }
+  renderHistTable();
+}
+
+function getHistDataKey() {
+  const provName = histProvSelect.value;
+  const tiers = HIST_TIERS[provName];
+  if (tiers) {
+    return histTierSelect.value;
+  }
+  return provName;
+}
+
+function renderHistTable() {
+  const dataKey = getHistDataKey();
+  const data = HIST_SALARY[dataKey];
+  const tbody = document.getElementById('histBody');
+  tbody.innerHTML = '';
+
+  if (!data) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;color:var(--text-tertiary);">暂无该省数据</td></tr>';
+    return;
+  }
+
+  const years = Object.keys(data).sort((a, b) => b - a);
+  years.forEach(year => {
+    const d = data[year];
+    const tr = document.createElement('tr');
+
+    // Calculate growth rate (only within same caliber)
+    const prevYear = parseInt(year) - 1;
+    const prevData = data[prevYear];
+    let growthHtml = '—';
+    if (prevData && prevData.v > 0 && d.c === prevData.c) {
+      const growth = ((d.v - prevData.v) / prevData.v * 100).toFixed(1);
+      const isUp = parseFloat(growth) >= 0;
+      growthHtml = `<span style="color:${isUp ? 'var(--success)' : 'var(--danger)'};font-weight:600;">${isUp ? '↑' : '↓'} ${Math.abs(growth)}%</span>`;
+    } else if (prevData && d.c !== prevData.c) {
+      growthHtml = '<span style="color:var(--warning);font-size:10px;">口径切换</span>';
+    }
+
+    const srcTag = d.s === 'o'
+      ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#E8F8EF;color:#2ECC71;font-size:10px;font-weight:600;">官方</span>'
+      : '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#F0F1F7;color:#9CA3C4;font-size:10px;font-weight:600;">估算</span>';
+
+    const caliberTag = d.c === 'n'
+      ? '<span style="display:inline-block;padding:2px 6px;border-radius:8px;background:#EEF1FE;color:#4F6EF7;font-size:9px;font-weight:600;">非私营</span>'
+      : '<span style="display:inline-block;padding:2px 6px;border-radius:8px;background:#FFF3E0;color:#FF8C42;font-size:9px;font-weight:600;">全口径</span>';
+
+    tr.innerHTML = `
+      <td style="font-weight:600;">${year}</td>
+      <td style="font-size:15px;font-weight:700;color:var(--primary);">${d.v.toLocaleString()}</td>
+      <td>${growthHtml}</td>
+      <td>${srcTag} ${caliberTag}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (histChartVisible) drawHistChart();
+}
+
+function toggleHistView() {
+  histChartVisible = !histChartVisible;
+  const wrap = document.getElementById('histChartWrap');
+  const btn = document.getElementById('histViewBtn');
+  wrap.style.display = histChartVisible ? '' : 'none';
+  btn.textContent = histChartVisible ? '📋 查看数据表' : '📊 查看趋势图';
+  if (histChartVisible) drawHistChart();
+}
+
+function drawHistChart() {
+  const canvas = document.getElementById('histChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+
+  const dataKey = getHistDataKey();
+  const data = HIST_SALARY[dataKey];
+  if (!data) return;
+
+  const years = Object.keys(data).sort((a, b) => a - b);
+  const values = years.map(y => data[y].v);
+  const maxVal = Math.max(...values) * 1.15;
+  const minVal = Math.min(...values) * 0.85;
+
+  const padL = 52, padR = 16, padT = 20, padB = 32;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+
+  // Background
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#F8F9FE';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = '#E8EAF6';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + chartH * i / 4;
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(W - padR, y);
+    ctx.stroke();
+
+    const val = maxVal - (maxVal - minVal) * i / 4;
+    ctx.fillStyle = '#9CA3C4';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(val).toLocaleString(), padL - 6, y + 3);
+  }
+
+  // Points and line
+  const points = years.map((y, i) => ({
+    x: padL + chartW * i / (years.length - 1),
+    y: padT + chartH * (1 - (values[i] - minVal) / (maxVal - minVal)),
+    val: values[i],
+    year: y,
+    src: data[y].s
+  }));
+
+  // Fill gradient
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, padT + chartH);
+  points.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(points[points.length - 1].x, padT + chartH);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + chartH);
+  grad.addColorStop(0, 'rgba(79,110,247,0.15)');
+  grad.addColorStop(1, 'rgba(79,110,247,0.02)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#4F6EF7';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  points.forEach((p, i) => { i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y); });
+  ctx.stroke();
+
+  // Caliber transition line (2018→2019)
+  const p2018 = points.find(p => p.year === '2018');
+  const p2019 = points.find(p => p.year === '2019');
+  if (p2018 && p2019) {
+    const midX = (p2018.x + p2019.x) / 2;
+    ctx.beginPath();
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = '#FF8C42';
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(midX, padT);
+    ctx.lineTo(midX, padT + chartH);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Label
+    ctx.fillStyle = '#FF8C42';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('口径切换', midX, padT - 3);
+  }
+
+  // Dots and labels
+  points.forEach(p => {
+    const isCaliberSwitch = (p.year === '2018' || p.year === '2019');
+    const dotColor = isCaliberSwitch ? '#FF8C42' : '#4F6EF7';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, isCaliberSwitch ? 5 : 4, 0, Math.PI * 2);
+    ctx.fillStyle = dotColor;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+
+    // Value label - only show for every 3rd year or caliber switch years to avoid overlap
+    const showLabel = (i % 3 === 0) || i === 0 || i === points.length - 1 || isCaliberSwitch;
+    if (showLabel) {
+      ctx.fillStyle = '#1A1D2E';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(p.val.toLocaleString(), p.x, p.y - 10);
+    }
+
+    // Year label - only show every 3rd year or key years
+    const showYear = (i % 3 === 0) || i === 0 || i === points.length - 1 || isCaliberSwitch;
+    if (showYear) {
+      ctx.fillStyle = '#9CA3C4';
+      ctx.font = '10px sans-serif';
+      ctx.fillText(p.year, p.x, padT + chartH + 16);
+    }
+  });
+}
+
+// Init historical table
+renderHistTable();
+
+// Sync historical province with calculator province
+const origOnProvinceChange = onProvinceChange;
+onProvinceChange = function() {
+  origOnProvinceChange();
+  histProvSelect.value = getProvince().name;
+  onHistProvChange();
+};
+
+// Init
+onProvinceChange();
+updateIndex();
+
+// PWA: Register Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(() => {
+    console.log('SW registered');
+  });
+}
+
+// PWA: Install prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallBanner();
+});
+
+function showInstallBanner() {
+  const banner = document.createElement('div');
+  banner.id = 'installBanner';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#fff;padding:14px 20px;box-shadow:0 -2px 12px rgba(0,0,0,0.12);z-index:9999;display:flex;align-items:center;justify-content:space-between;gap:12px;';
+  banner.innerHTML = `
+    <div style="flex:1;">
+      <div style="font-weight:700;font-size:14px;color:#1A1D2E;">📱 添加到主屏幕</div>
+      <div style="font-size:12px;color:#9CA3C4;margin-top:2px;">像App一样离线使用养老金试算器</div>
+    </div>
+    <button onclick="installApp()" style="background:#4F6EF7;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">安装</button>
+    <span onclick="this.parentElement.remove()" style="color:#9CA3C4;cursor:pointer;font-size:18px;line-height:1;">✕</span>
+  `;
+  document.body.appendChild(banner);
+}
+
+async function installApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const {outcome} = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  const banner = document.getElementById('installBanner');
+  if (banner) banner.remove();
+}
+</script>
+</body>
+</html>
