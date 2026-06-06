@@ -1448,14 +1448,55 @@ function selectPlan(el) {
 }
 
 function handleUpgrade() {
-  // Placeholder: in production this would redirect to payment
-  // For now, simulate upgrade success
   const selected = document.querySelector('.plan-card.selected');
-  const planName = selected ? selected.dataset.plan : 'monthly';
-  localStorage.setItem(PREMIUM_KEY, '1');
-  closeUpgradeModal();
-  updateUsageHint();
-  showToast('🎉 升级成功！已解锁全部功能');
+  const plan = selected ? selected.dataset.plan : 'yearly';
+  // Redirect to payment page
+  if (plan === 'yearly') {
+    window.open('https://afdian.com/order/create?plan_id=YEARLY_PLAN_ID&product_type=0', '_blank');
+  } else {
+    window.open('https://afdian.com/order/create?plan_id=MONTHLY_PLAN_ID&product_type=0', '_blank');
+  }
+  // Show activation input after redirect
+  setTimeout(() => {
+    document.getElementById('activationSection').style.display = 'block';
+  }, 500);
+}
+
+function activateCode() {
+  const code = document.getElementById('activationCode').value.trim();
+  if (!code) { showToast('请输入激活码'); return; }
+  // Validate activation code format: pension-XXXX-XXXX-XXXX
+  if (!/^pension-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}$/.test(code)) {
+    showToast('激活码格式不正确');
+    return;
+  }
+  // Simple hash verification (in production, verify against backend)
+  const hash = simpleHash(code);
+  if (hash % 7 === 0 || hash % 13 === 0 || hash % 19 === 0 || hash % 31 === 0 || hash % 37 === 0) {
+    localStorage.setItem(PREMIUM_KEY, '1');
+    localStorage.setItem('activation_code', code);
+    localStorage.setItem('activation_time', new Date().toISOString());
+    closeUpgradeModal();
+    updateUsageHint();
+    showToast('🎉 激活成功！已解锁全部功能');
+  } else {
+    showToast('激活码无效，请检查后重试');
+  }
+}
+
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+}
+
+function toggleActivation() {
+  const section = document.getElementById('activationSection');
+  section.style.display = section.style.display === 'none' ? 'block' : 'none';
 }
 
 // Gate premium feature clicks
@@ -1511,7 +1552,20 @@ updateUsageHint();
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn-upgrade" onclick="handleUpgrade()">立即升级</button>
+      <button class="btn-upgrade" onclick="handleUpgrade()">立即购买</button>
+      <div style="margin-top:14px;text-align:center;">
+        <span style="font-size:12px;color:var(--text-tertiary);cursor:pointer;" onclick="toggleActivation()">已有激活码？点此输入 →</span>
+      </div>
+      <div id="activationSection" style="display:none;margin-top:12px;">
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="activationCode" placeholder="pension-XXXX-XXXX-XXXX" 
+            style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:monospace;outline:none;"
+            onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+          <button onclick="activateCode()" 
+            style="padding:12px 18px;border:none;border-radius:10px;background:var(--success);color:#fff;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">激活</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-tertiary);margin-top:6px;text-align:center;">付款后从确认页面获取激活码</div>
+      </div>
       <div class="modal-close" onclick="closeUpgradeModal()">暂不升级，继续使用免费版</div>
     </div>
   </div>
