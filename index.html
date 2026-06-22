@@ -2,22 +2,41 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<!-- 友盟+ 流量统计 SDK -->
+<script src="https://v1.cnzz.com/z_stat.php?id=6a38faf76f259537c7bcc2f7&show=page" async></script>
+<script>
+(function(w,d,s,q,i){
+  w[q]=w[q]||[];
+  var f=d.getElementsByTagName(s)[0],j=d.createElement(s);
+  j.async=true;j.id='beacon-aplus';
+  j.src='https://d.alicdn.com/alilog/mlog/aplus/'+i+'.js';
+  f.parentNode.insertBefore(j,f);
+})(window,document,'script','aplus_queue','203467608');
+aplus_queue.push({action:'aplus.setMetaInfo',arguments:['appKey','6a38faf76f259537c7bcc2f7']});
+aplus_queue.push({action:'aplus.setMetaInfo',arguments:['aplus-waiting','MAN']});
+aplus_queue.push({action:'aplus.setMetaInfo',arguments:['DEBUG',false]});
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>养老金试算器</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#7B61FF">
+<meta name="theme-color" content="#007AFF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="养老金试算">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles/dashboard.css">
 <script defer src="scripts/dashboard.js"></script>
 </head>
 <body>
 
 <div class="app-header">
-  <h1>养老金试算器</h1>
-  <p>2024年各省社平 · 三金全覆盖</p>
+  <div class="app-header-top">
+    <h1>养老金试算器</h1>
+    <p>2024年各省社平 · 三金全覆盖</p>
+  </div>
 </div>
 
 <div class="page">
@@ -26,29 +45,28 @@
   <div class="result-float">
     <div class="result-label">预估月养老金</div>
     <div class="result-amount"><span id="totalPension">0</span> <span class="unit">元/月</span></div>
-    <div class="result-ratio" id="pensionNote">—</div>
 
     <div class="breakdown">
       <div class="bk-item">
         <div class="bk-head">
           <span class="bk-name">基础养老金</span>
-          <span class="bk-val" id="basicPension" style="color:var(--primary)">0 元</span>
+          <span class="bk-val basic" id="basicPension">0 元</span>
         </div>
-        <div class="bk-bar"><div class="bk-bar-fill basic" id="basicBar" style="width:0%"></div></div>
+        <div class="bk-bar"><div class="bk-bar-fill basic" id="basicBar"></div></div>
       </div>
       <div class="bk-item">
         <div class="bk-head">
           <span class="bk-name">个人账户养老金</span>
-          <span class="bk-val" id="personalPension" style="color:var(--success)">0 元</span>
+          <span class="bk-val personal" id="personalPension">0 元</span>
         </div>
-        <div class="bk-bar"><div class="bk-bar-fill personal" id="personalBar" style="width:0%"></div></div>
+        <div class="bk-bar"><div class="bk-bar-fill personal" id="personalBar"></div></div>
       </div>
       <div class="bk-item">
         <div class="bk-head">
           <span class="bk-name">过渡性养老金</span>
-          <span class="bk-val" id="transPension" style="color:var(--warning)">0 元</span>
+          <span class="bk-val trans" id="transPension">0 元</span>
         </div>
-        <div class="bk-bar"><div class="bk-bar-fill trans" id="transBar" style="width:0%"></div></div>
+        <div class="bk-bar"><div class="bk-bar-fill trans" id="transBar"></div></div>
       </div>
     </div>
 
@@ -59,7 +77,7 @@
       <p>① 基础养老金 = <code>计发基数 × (1+平均缴费指数) ÷ 2 × 缴费年限 × 1%</code></p>
       <p>② 个人账户养老金 = <code>个人账户储存额 ÷ 计发月数</code></p>
       <p>③ 过渡性养老金 = <code>计发基数 × 视同缴费指数 × 视同缴费年限 × 过渡系数</code></p>
-      <hr style="border:none;border-top:1px dashed var(--border);margin:8px 0;">
+      <hr class="divider">
       <p>计发月数：<strong id="jifayueshu">139</strong>个月（<span id="retireAgeDisplay">60</span>岁退休）</p>
       <p>过渡系数：<strong id="transCoeffDisplay">1.2</strong>%（<span id="provinceForCoeff">北京</span>）</p>
       <p>视同缴费年限：<strong id="deemedYearsDisplay">0</strong>年</p>
@@ -93,7 +111,7 @@
     <div class="fg">
       <div class="fg-label">累计缴费月数 <span class="sub">1年=12个月</span></div>
       <input type="number" id="totalMonths" value="300" min="180" max="600" step="1" oninput="onTotalMonthsChange()">
-      <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;" id="yearsDisplay">= 25年0个月</div>
+      <div class="small-note" id="yearsDisplay">= 25年0个月</div>
     </div>
 
     <div class="fg">
@@ -116,7 +134,7 @@
       </div>
 
       <!-- Detail mode -->
-      <div id="detailMode" style="display:none;">
+      <div id="detailMode" class="hidden">
         <div class="fg-label"><span class="explain">填写历年缴费基数，系统自动匹配当地社平计算精确指数</span></div>
 
         <div class="gran-row">
@@ -132,7 +150,7 @@
 
         <div class="upload-box" id="uploadArea">
           <input type="file" accept=".csv,.txt" onchange="handleUpload(event)">
-          <div class="icon">📂</div>
+          <div class="icon" data-lucide="upload"></div>
           <div class="main-text">点击上传 CSV</div>
           <div class="sub-text">社保APP导出的缴费记录可直接使用</div>
           <div class="upload-hint">
@@ -146,7 +164,7 @@
         <div class="detail-scroll">
           <table class="detail-tbl">
             <thead><tr id="detailHeader">
-              <th style="width:50px;">年份</th><th>缴费基数</th><th>当地社平</th><th style="width:52px;">指数</th><th style="width:28px;"></th>
+              <th class="col-year">年份</th><th>缴费基数</th><th>当地社平</th><th class="col-index">指数</th><th class="col-empty"></th>
             </tr></thead>
             <tbody id="detailBody"></tbody>
           </table>
@@ -154,7 +172,7 @@
 
         <div class="action-row">
           <button class="act-btn act-primary" onclick="addDetailRow()">+ 添加行</button>
-          <button class="act-btn act-green" onclick="exportCSV()">📥 导出模板</button>
+          <button class="act-btn act-green" onclick="exportCSV()"><span data-lucide="download"></span> 导出模板</button>
         </div>
 
         <div class="detail-summary">
@@ -176,9 +194,9 @@
   <!-- Transition Pension -->
   <div class="section-card">
     <div class="section-title">
-      <span class="dot" style="background:var(--accent);"></span>过渡性养老金 <span class="trans-tag">仅"中人"填写</span>
+      <span class="dot accent"></span>过渡性养老金 <span class="trans-tag">仅"中人"填写</span>
     </div>
-    <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:14px;">个人账户建立前参加工作的"中人"才需填写，"新人"可跳过</div>
+    <div class="section-tip">个人账户建立前参加工作的"中人"才需填写，"新人"可跳过</div>
     <div class="fg-row">
       <div class="fg">
         <div class="fg-label">参加工作年份</div>
@@ -193,26 +211,26 @@
 
   <!-- Historical Salary Query -->
   <div class="section-card">
-    <div class="section-title"><span class="dot" style="background:var(--success);"></span>历年社平工资查询（2001-2024）</div>
-    <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:14px;">全口径城镇单位就业人员月均工资(2019起) · 非私营在岗职工月均工资(2018前)</div>
+    <div class="section-title"><span class="dot success"></span>历年社平工资查询（2001-2024）</div>
+    <div class="section-tip">全口径城镇单位就业人员月均工资(2019起) · 非私营在岗职工月均工资(2018前)</div>
 
-    <div class="fg-row" style="margin-bottom:14px;">
-      <div class="fg" style="margin-bottom:0;">
+    <div class="fg-row tight">
+      <div class="fg tight-fg">
         <select id="histProvince" onchange="onHistProvChange()">
         </select>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <button class="act-btn act-primary" onclick="toggleHistView()" id="histViewBtn" style="font-size:11px;padding:6px 10px;">📊 查看趋势图</button>
+      <div class="hist-action-row">
+        <button class="act-btn act-primary hist-toggle" onclick="toggleHistView()" id="histViewBtn"><span data-lucide="pie-chart"></span> 查看趋势图</button>
       </div>
     </div>
-    <div id="histTierRow" style="display:none;margin-bottom:14px;">
-      <div class="fg" style="margin-bottom:0;">
+    <div id="histTierRow" class="hist-tier-row">
+      <div class="fg tight-fg">
         <select id="histTier" onchange="renderHistTable()">
         </select>
       </div>
     </div>
 
-    <div class="detail-scroll" style="max-height:400px;">
+    <div id="histTableScroll" class="detail-scroll tall">
       <table class="detail-tbl" id="histTable">
         <thead>
           <tr>
@@ -224,11 +242,11 @@
     </div>
 
     <!-- Mini chart area -->
-    <div id="histChartWrap" style="display:none;margin-top:14px;position:relative;">
-      <canvas id="histChart" width="440" height="280" style="width:100%;height:auto;"></canvas>
+    <div id="histChartWrap" class="hist-chart-wrap">
+      <canvas id="histChart" class="hist-chart"></canvas>
     </div>
 
-    <div style="margin-top:10px;font-size:11px;color:var(--text-tertiary);line-height:1.6;">
+    <div class="small-note">
       💡 <strong>官方</strong>= 人社厅/统计局原始数据；<strong>估算</strong>= 按增长率倒推<br>
       <strong>非私营</strong>= 2001-2018年在岗职工口径；<strong>全口径</strong>= 2019年起含私营单位<br>
       2018→2019年数据因口径切换会有明显下降，属正常现象<br>
@@ -309,6 +327,27 @@ for (let age = 40; age <= 70; age++) {
 
 function getProvince() { return PROVINCES[provinceSelect.value]; }
 
+const ICON_FALLBACKS = {
+  'pie-chart': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8.11 2.79"/><path d="M22 12h-9V3"/></svg>',
+  'list': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+  'download': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  'upload': '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  'smartphone': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>'
+};
+
+function renderIcons() {
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
+    return;
+  }
+  Object.keys(ICON_FALLBACKS).forEach(name => {
+    document.querySelectorAll('[data-lucide="' + name + '"]').forEach(el => {
+      el.innerHTML = ICON_FALLBACKS[name];
+      el.classList.add('inline-icon');
+    });
+  });
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -328,7 +367,7 @@ function updateIndex() {
   document.getElementById('avgIndexVal').textContent = val.toFixed(2);
   // Update range track gradient
   const pct = ((val - 0.6) / (3.0 - 0.6)) * 100;
-  document.getElementById('avgIndex').style.background = `linear-gradient(90deg,var(--primary) ${pct}%,#E8EAF6 ${pct}%)`;
+  document.documentElement.style.setProperty('--avg-index-progress', pct + '%');
   let meaning;
   if (val <= 0.65) meaning = '≈ 最低档(60%)缴费';
   else if (val <= 0.85) meaning = '≈ 社平70-80%档缴费';
@@ -356,9 +395,9 @@ function switchGran(g) {
   document.getElementById('granMonth').classList.toggle('active', g === 'month');
   const headerRow = document.getElementById('detailHeader');
   if (g === 'month') {
-    headerRow.innerHTML = '<th style="width:42px;">年份</th><th style="width:36px;">月</th><th>缴费基数</th><th>当地月社平</th><th style="width:50px;">指数</th><th style="width:28px;"></th>';
+    headerRow.innerHTML = '<th class="col-year-small">年份</th><th class="col-month">月</th><th>缴费基数</th><th>当地月社平</th><th class="col-index">指数</th><th class="col-empty"></th>';
   } else {
-    headerRow.innerHTML = '<th style="width:50px;">年份</th><th>缴费基数</th><th>当地社平</th><th style="width:52px;">指数</th><th style="width:28px;"></th>';
+    headerRow.innerHTML = '<th class="col-year">年份</th><th>缴费基数</th><th>当地社平</th><th class="col-index">指数</th><th class="col-empty"></th>';
   }
   initDetailRows();
 }
@@ -551,8 +590,8 @@ function recalc() {
   document.getElementById('avgIdxSourceDisplay').textContent = avgIndex.toFixed(indexMode === 'detail' ? 4 : 2);
   document.getElementById('avgIdxSourceMode').textContent = indexMode === 'detail' ? `逐年明细（${granularity === 'month' ? '按月' : '按年'}）` : '快速估算';
 
-  const ratio = (total / baseSalary * 100).toFixed(1);
-  document.getElementById('pensionNote').textContent = `约为当地社平工资的 ${ratio}%`;
+  // 友盟+ 自定义事件
+  sendUmengCalcEvent();
 }
 
 function estimateAccount() {
@@ -607,7 +646,7 @@ function parseCSV(text) {
           granularity = 'month';
           document.getElementById('granYear').classList.remove('active');
           document.getElementById('granMonth').classList.add('active');
-          document.getElementById('detailHeader').innerHTML = '<th style="width:42px;">年份</th><th style="width:36px;">月</th><th>缴费基数</th><th>当地月社平</th><th style="width:50px;">指数</th><th style="width:28px;"></th>';
+          document.getElementById('detailHeader').innerHTML = '<th class="col-year-small">年份</th><th class="col-month">月</th><th>缴费基数</th><th>当地月社平</th><th class="col-index">指数</th><th class="col-empty"></th>';
         }
         newRows.push({ year, month, myBase, localAvg: estHistAvg(year, prov.avgSalary, growthRate) });
         parsedCount++;
@@ -619,7 +658,7 @@ function parseCSV(text) {
           granularity = 'year';
           document.getElementById('granYear').classList.add('active');
           document.getElementById('granMonth').classList.remove('active');
-          document.getElementById('detailHeader').innerHTML = '<th style="width:50px;">年份</th><th>缴费基数</th><th>当地社平</th><th style="width:52px;">指数</th><th style="width:28px;"></th>';
+          document.getElementById('detailHeader').innerHTML = '<th class="col-year">年份</th><th>缴费基数</th><th>当地社平</th><th class="col-index">指数</th><th class="col-empty"></th>';
         }
         newRows.push({ year, myBase, localAvg: estHistAvg(year, prov.avgSalary, growthRate) });
         parsedCount++;
@@ -776,7 +815,7 @@ function renderHistTable() {
   tbody.innerHTML = '';
 
   if (!data) {
-    tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;color:var(--text-tertiary);">暂无该省数据</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="hist-empty">暂无该省数据</td></tr>';
     return;
   }
 
@@ -792,24 +831,24 @@ function renderHistTable() {
     if (prevData && prevData.v > 0 && d.c === prevData.c) {
       const growth = ((d.v - prevData.v) / prevData.v * 100).toFixed(1);
       const isUp = parseFloat(growth) >= 0;
-      growthHtml = `<span style="color:${isUp ? 'var(--success)' : 'var(--danger)'};font-weight:600;">${isUp ? '↑' : '↓'} ${Math.abs(growth)}%</span>`;
+      growthHtml = `<span class="${isUp ? 'growth-up' : 'growth-down'}">${isUp ? '↑' : '↓'} ${Math.abs(growth)}%</span>`;
     } else if (prevData && d.c !== prevData.c) {
-      growthHtml = '<span style="color:var(--warning);font-size:10px;">口径切换</span>';
+      growthHtml = '<span class="growth-switch">口径切换</span>';
     }
 
     const srcTag = d.s === 'o'
-      ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#E8F8EF;color:#2ECC71;font-size:10px;font-weight:600;">官方</span>'
-      : '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#F0F1F7;color:#9CA3C4;font-size:10px;font-weight:600;">估算</span>';
+      ? '<span class="pill-tag official">官方</span>'
+      : '<span class="pill-tag estimate">估算</span>';
 
     const caliberTag = d.c === 'n'
-      ? '<span style="display:inline-block;padding:2px 6px;border-radius:8px;background:#EEF1FE;color:#4F6EF7;font-size:9px;font-weight:600;">非私营</span>'
-      : '<span style="display:inline-block;padding:2px 6px;border-radius:8px;background:#FFF3E0;color:#FF8C42;font-size:9px;font-weight:600;">全口径</span>';
+      ? '<span class="pill-tag nonprivate">非私营</span>'
+      : '<span class="pill-tag fullcaliber">全口径</span>';
 
     tr.innerHTML = `
-      <td style="font-weight:600;">${year}</td>
-      <td style="font-size:15px;font-weight:700;color:var(--primary);">${d.v.toLocaleString()}</td>
-      <td>${growthHtml}</td>
-      <td>${srcTag} ${caliberTag}</td>
+      <td class="hist-year">${year}</td>
+      <td class="hist-value">${d.v.toLocaleString()}</td>
+      <td class="hist-growth">${growthHtml}</td>
+      <td class="hist-source">${srcTag} ${caliberTag}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -821,9 +860,14 @@ function toggleHistView() {
   histChartVisible = !histChartVisible;
   const wrap = document.getElementById('histChartWrap');
   const btn = document.getElementById('histViewBtn');
-  wrap.style.display = histChartVisible ? '' : 'none';
-  btn.textContent = histChartVisible ? '📋 查看数据表' : '📊 查看趋势图';
+  wrap.style.display = histChartVisible ? 'block' : 'none';
+  btn.innerHTML = histChartVisible ? '<span data-lucide="list"></span> 查看数据表' : '<span data-lucide="pie-chart"></span> 查看趋势图';
+  renderIcons();
   if (histChartVisible) drawHistChart();
+}
+
+function scrollHistTable(direction) {
+  // Table is now static and does not support horizontal scrolling.
 }
 
 function drawHistChart() {
@@ -849,13 +893,29 @@ function drawHistChart() {
   const chartW = W - padL - padR;
   const chartH = H - padT - padB;
 
+  // Theme-aware colors from CSS variables
+  const s = getComputedStyle(document.documentElement);
+  const COLOR_BG = (s.getPropertyValue('--bg-secondary') || '#F5F5F7').trim();
+  const COLOR_GRID = (s.getPropertyValue('--border') || '#D1D1D6').trim();
+  const COLOR_MUTED = (s.getPropertyValue('--text-tertiary') || '#A1A1AA').trim();
+  const COLOR_PRIMARY = (s.getPropertyValue('--primary') || '#007AFF').trim();
+  const COLOR_ACCENT = (s.getPropertyValue('--accent') || '#FF9F0A').trim();
+  function hexToRgba(hex, a){
+    hex = hex.replace('#','').trim();
+    if (hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+    const r = parseInt(hex.substr(0,2),16);
+    const g = parseInt(hex.substr(2,2),16);
+    const b = parseInt(hex.substr(4,2),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
   // Background
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#F8F9FE';
+  ctx.fillStyle = COLOR_BG;
   ctx.fillRect(0, 0, W, H);
 
   // Grid lines
-  ctx.strokeStyle = '#E8EAF6';
+  ctx.strokeStyle = COLOR_GRID;
   ctx.lineWidth = 0.5;
   for (let i = 0; i <= 4; i++) {
     const y = padT + chartH * i / 4;
@@ -865,7 +925,7 @@ function drawHistChart() {
     ctx.stroke();
 
     const val = maxVal - (maxVal - minVal) * i / 4;
-    ctx.fillStyle = '#9CA3C4';
+    ctx.fillStyle = COLOR_MUTED;
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText(Math.round(val).toLocaleString(), padL - 6, y + 3);
@@ -887,14 +947,14 @@ function drawHistChart() {
   ctx.lineTo(points[points.length - 1].x, padT + chartH);
   ctx.closePath();
   const grad = ctx.createLinearGradient(0, padT, 0, padT + chartH);
-  grad.addColorStop(0, 'rgba(79,110,247,0.15)');
-  grad.addColorStop(1, 'rgba(79,110,247,0.02)');
+  grad.addColorStop(0, hexToRgba(COLOR_PRIMARY, 0.15));
+  grad.addColorStop(1, hexToRgba(COLOR_PRIMARY, 0.02));
   ctx.fillStyle = grad;
   ctx.fill();
 
   // Line
   ctx.beginPath();
-  ctx.strokeStyle = '#4F6EF7';
+  ctx.strokeStyle = COLOR_PRIMARY;
   ctx.lineWidth = 2.5;
   ctx.lineJoin = 'round';
   points.forEach((p, i) => { i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y); });
@@ -907,23 +967,23 @@ function drawHistChart() {
     const midX = (p2018.x + p2019.x) / 2;
     ctx.beginPath();
     ctx.setLineDash([4, 3]);
-    ctx.strokeStyle = '#FF8C42';
+    ctx.strokeStyle = COLOR_ACCENT;
     ctx.lineWidth = 1.5;
     ctx.moveTo(midX, padT);
     ctx.lineTo(midX, padT + chartH);
     ctx.stroke();
     ctx.setLineDash([]);
     // Label
-    ctx.fillStyle = '#FF8C42';
+    ctx.fillStyle = COLOR_ACCENT;
     ctx.font = 'bold 9px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('口径切换', midX, padT - 3);
   }
 
   // Dots and labels
-  points.forEach(p => {
+  points.forEach((p, i) => {
     const isCaliberSwitch = (p.year === '2018' || p.year === '2019');
-    const dotColor = isCaliberSwitch ? '#FF8C42' : '#4F6EF7';
+    const dotColor = isCaliberSwitch ? COLOR_ACCENT : COLOR_PRIMARY;
     ctx.beginPath();
     ctx.arc(p.x, p.y, isCaliberSwitch ? 5 : 4, 0, Math.PI * 2);
     ctx.fillStyle = dotColor;
@@ -936,7 +996,7 @@ function drawHistChart() {
     // Value label - only show for every 3rd year or caliber switch years to avoid overlap
     const showLabel = (i % 3 === 0) || i === 0 || i === points.length - 1 || isCaliberSwitch;
     if (showLabel) {
-      ctx.fillStyle = '#1A1D2E';
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text') || '#1D1D1F';
       ctx.font = 'bold 10px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(p.val.toLocaleString(), p.x, p.y - 10);
@@ -945,7 +1005,7 @@ function drawHistChart() {
     // Year label - only show every 3rd year or key years
     const showYear = (i % 3 === 0) || i === 0 || i === points.length - 1 || isCaliberSwitch;
     if (showYear) {
-      ctx.fillStyle = '#9CA3C4';
+      ctx.fillStyle = COLOR_MUTED;
       ctx.font = '10px sans-serif';
       ctx.fillText(p.year, p.x, padT + chartH + 16);
     }
@@ -985,16 +1045,17 @@ window.addEventListener('beforeinstallprompt', e => {
 function showInstallBanner() {
   const banner = document.createElement('div');
   banner.id = 'installBanner';
-  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#fff;padding:14px 20px;box-shadow:0 -2px 12px rgba(0,0,0,0.12);z-index:9999;display:flex;align-items:center;justify-content:space-between;gap:12px;';
+  banner.className = 'install-banner';
   banner.innerHTML = `
-    <div style="flex:1;">
-      <div style="font-weight:700;font-size:14px;color:#1A1D2E;">📱 添加到主屏幕</div>
-      <div style="font-size:12px;color:#9CA3C4;margin-top:2px;">像App一样离线使用养老金试算器</div>
+    <div class="install-info">
+      <div class="install-title"><span data-lucide="smartphone"></span> 添加到主屏幕</div>
+      <div class="install-subtitle">像 App 一样离线使用养老金试算器</div>
     </div>
-    <button onclick="installApp()" style="background:#4F6EF7;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">安装</button>
-    <span onclick="this.parentElement.remove()" style="color:#9CA3C4;cursor:pointer;font-size:18px;line-height:1;">✕</span>
+    <button class="install-btn" onclick="installApp()">安装</button>
+    <span class="install-close" onclick="this.parentElement.remove()">×</span>
   `;
   document.body.appendChild(banner);
+  renderIcons();
 }
 
 async function installApp() {
@@ -1006,6 +1067,29 @@ async function installApp() {
   if (banner) banner.remove();
 }
 
+</script>
+
+<!-- Fallback inline icons when CDN is blocked -->
+<script>
+  (function(){
+    const ICONS = {
+      'pie-chart': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8.11 2.79"/><path d="M22 12h-9V3"/></svg>',
+      'list': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+      'download': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+      'upload': '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+      'smartphone': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>'
+    };
+    function replaceIcons(){
+      Object.keys(ICONS).forEach(name => {
+        document.querySelectorAll('[data-lucide="'+name+'"]').forEach(el => {
+          el.innerHTML = ICONS[name];
+          el.classList.add('inline-icon');
+        });
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderIcons);
+    else renderIcons();
+  })();
 </script>
 
 </body>
